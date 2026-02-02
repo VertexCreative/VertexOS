@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertex Creative | OS</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { os: '#050505', border: 'rgba(255,255,255,0.1)' },
+                    animation: { 'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)' },
+                    keyframes: { popIn: { '0%': { opacity: 0, transform: 'scale(0.95) translateY(10px)' }, '100%': { opacity: 1, transform: 'scale(1) translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #000; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
+        
+        /* High-End Wallpaper */
+        #desktop {
+            position: absolute; inset: 0;
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') no-repeat center center;
+            background-size: cover; z-index: 0;
+        }
+        #desktop::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(0px); /* Adjust blur if needed */
+        }
+
+        /* The Pro Dock */
+        .dock-container {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px; border-radius: 24px;
+            display: flex; gap: 12px; z-index: 50;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: 0.3s;
+        }
+        .dock-item {
+            width: 50px; height: 50px; border-radius: 14px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+        }
+        .dock-item:hover { transform: translateY(-10px) scale(1.1); background: rgba(255,255,255,0.15); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        /* Active Dot */
+        .dock-item.active::after {
+            content: ''; position: absolute; bottom: -6px; width: 4px; height: 4px;
+            background: white; border-radius: 50%;
+        }
+
+        .dock-tooltip {
+            position: absolute; top: -45px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 10px; border-radius: 8px; font-size: 11px; opacity: 0;
+            pointer-events: none; transition: 0.2s; white-space: nowrap; font-weight: 500; transform: translateY(10px);
+        }
+        .dock-item:hover .dock-tooltip { opacity: 1; transform: translateY(0); }
+
+        /* Windows */
+        .window {
+            position: absolute; background: #0a0a0a; 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 30px 60px -15px rgba(0, 0, 0, 0.8);
+            display: flex; flex-direction: column; overflow: hidden;
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 300px; min-height: 200px;
+        }
+        .window.active-win { border-color: rgba(255,255,255,0.2); box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 40px 80px -20px rgba(0, 0, 0, 0.9); }
+
+        .window-header {
+            height: 38px; background: #141414; border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 14px; cursor: default;
+        }
+        .window-title { font-size: 12px; font-weight: 500; color: #d4d4d8; pointer-events: none; }
+        
+        .window-content { flex: 1; background: #000; position: relative; }
+        .window-content iframe { width: 100%; height: 100%; border: none; background: #000; }
+        
+        /* Drag Overlay */
+        .drag-shield { position: absolute; inset: 0; display: none; z-index: 50; }
+        .window.dragging .drag-shield { display: block; }
+
+        /* Controls */
+        .win-controls { display: flex; gap: 8px; }
+        .win-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; position: relative; }
+        .btn-close { background: #ff5f57; border: 1px solid #e0443e; }
+        .btn-min { background: #febc2e; border: 1px solid #d89e24; }
+        .btn-max { background: #28c840; border: 1px solid #1aab29; }
+        
+        .win-controls:hover .win-btn::after { 
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
+            font-size: 8px; font-weight: bold; color: rgba(0,0,0,0.6); opacity: 1;
+        }
+        .win-controls:hover .btn-close::after { content: '×'; }
+        .win-controls:hover .btn-min::after { content: '-'; }
+        .win-controls:hover .btn-max::after { content: '+'; }
+
+    </style>
+</head>
+<body>
+
+    <div id="boot-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(255,255,255,0.2)]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" class="w-10 h-10"><path d="M12 2L2 22h20L12 2z"/></svg>
+        </div>
+        <div class="w-48 h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="load-bar" class="h-full bg-white w-0 transition-all duration-[1500ms] ease-out"></div>
+        </div>
+    </div>
+
+    <div id="desktop">
+        
+        <div class="absolute top-0 w-full h-8 bg-black/40 backdrop-blur-md flex items-center justify-between px-5 z-40 border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 font-bold text-xs text-white hover:text-zinc-300 transition cursor-pointer">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12 2L2 22h20L12 2z"/></svg>
+                    Vertex OS
+                </div>
+            </div>
+            <div class="flex items-center gap-6 text-[11px] font-medium text-zinc-300">
+                <div id="clock">12:00 PM</div>
+                <div class="flex items-center gap-2"><i data-lucide="wifi" class="w-3 h-3"></i> Vertex_5G</div>
+                <div class="flex items-center gap-2"><i data-lucide="battery-charging" class="w-3 h-3"></i> 100%</div>
+            </div>
+        </div>
+
+        <div id="window-area" class="absolute inset-0 top-8 bottom-20 overflow-hidden"></div>
+
+    </div>
+
+    <div class="dock-container">
+        
+        <div class="dock-item" id="dock-passforge" onclick="handleApp('passforge', 'PassForge', 'apps/passforge.html', 400, 600)">
+            <i data-lucide="shield-check" class="text-blue-400 w-6 h-6"></i>
+            <span class="dock-tooltip">PassForge</span>
+        </div>
+
+        <div class="dock-item" id="dock-qrx" onclick="handleApp('qrx', 'QR-X', 'apps/qrx.html', 500, 700)">
+            <i data-lucide="qr-code" class="text-rose-500 w-6 h-6"></i>
+            <span class="dock-tooltip">QR-X</span>
+        </div>
+
+        <div class="dock-item" id="dock-lumix" onclick="handleApp('lumix', 'Lumix Pro', 'apps/lumix.html', 900, 650)">
+            <i data-lucide="palette" class="text-purple-400 w-6 h-6"></i>
+            <span class="dock-tooltip">Lumix</span>
+        </div>
+
+        <div class="dock-item" id="dock-typex" onclick="handleApp('typex', 'Type-X', 'apps/typex.html', 800, 500)">
+            <i data-lucide="keyboard" class="text-green-400 w-6 h-6"></i>
+            <span class="dock-tooltip">Type-X</span>
+        </div>
+
+        <div class="dock-item" id="dock-reflex" onclick="handleApp('reflex', 'RefleX', 'apps/reflex.html', 800, 600)">
+            <i data-lucide="crosshair" class="text-yellow-400 w-6 h-6"></i>
+            <span class="dock-tooltip">RefleX</span>
+        </div>
+
+        <div class="dock-item" id="dock-gravitas" onclick="handleApp('gravitas', 'Gravitas', 'apps/gravitas.html', 1000, 700)">
+            <i data-lucide="orbit" class="text-cyan-400 w-6 h-6"></i>
+            <span class="dock-tooltip">Gravitas</span>
+        </div>
+        
+        <div class="dock-item" id="dock-kinetix" onclick="handleApp('kinetix', 'Kinetix', 'apps/kinetix.html', 1000, 700)">
+            <i data-lucide="film" class="text-indigo-400 w-6 h-6"></i>
+            <span class="dock-tooltip">Kinetix</span>
+        </div>
+
+        <div class="w-px h-8 bg-white/10 my-auto mx-1"></div>
+
+        <div class="dock-item" id="dock-admin" onclick="handleApp('admin', 'Admin', 'apps/admin.html', 1000, 700)">
+            <i data-lucide="lock" class="text-zinc-500 w-6 h-6"></i>
+            <span class="dock-tooltip">Admin</span>
+        </div>
+
+    </div>
+
+    <script>
+        // --- BOOT ---
+        window.onload = () => {
+            lucide.createIcons();
+            startClock();
+            setTimeout(() => document.getElementById('load-bar').style.width = '100%', 100);
+            setTimeout(() => {
+                const boot = document.getElementById('boot-screen');
+                boot.style.opacity = '0';
+                setTimeout(() => boot.remove(), 500);
+            }, 1800);
+        };
+
+        function startClock() {
+            setInterval(() => {
+                document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }, 1000);
+        }
+
+        // --- WINDOW ENGINE ---
+        let zIndex = 100;
+        let activeWindows = {}; // Store references to windows
+
+        function handleApp(key, title, url, w, h) {
+            const dockIcon = document.getElementById(`dock-${key}`);
+            
+            // 1. Check if window already exists
+            if (activeWindows[key]) {
+                const win = activeWindows[key];
+                
+                if (win.style.display === 'none') {
+                    // It was minimized, restore it
+                    win.style.display = 'flex';
+                    // Small pop animation
+                    win.style.transform = 'scale(0.9)';
+                    setTimeout(() => win.style.transform = 'scale(1)', 50);
+                }
+                
+                bringToFront(win);
+                return;
+            }
+
+            // 2. Create New Window
+            createWindow(key, title, url, w, h);
+            dockIcon.classList.add('active'); // Add dot to dock
+        }
+
+        function createWindow(key, title, url, w, h) {
+            zIndex++;
+            const win = document.createElement('div');
+            win.className = 'window active-win';
+            win.id = `win-${key}`;
+            
+            // Center spawn
+            const x = (window.innerWidth / 2) - (w / 2) + (Math.random() * 40 - 20);
+            const y = (window.innerHeight / 2) - (h / 2) + (Math.random() * 40 - 20);
+
+            win.style.width = w + 'px';
+            win.style.height = h + 'px';
+            win.style.left = Math.max(0, x) + 'px';
+            win.style.top = Math.max(30, y) + 'px';
+            win.style.zIndex = zIndex;
+
+            win.innerHTML = `
+                <div class="window-header" onmousedown="startDrag(event, '${key}')">
+                    <div class="win-controls" onmousedown="event.stopPropagation()">
+                        <div class="win-btn btn-close" onclick="closeWindow('${key}')"></div>
+                        <div class="win-btn btn-min" onclick="minimizeWindow('${key}')"></div>
+                        <div class="win-btn btn-max" onclick="maximizeWindow('${key}')"></div>
+                    </div>
+                    <div class="window-title">${title}</div>
+                    <div style="width:40px"></div>
+                </div>
+                <div class="window-content">
+                    <div class="drag-shield"></div>
+                    <iframe src="${url}"></iframe>
+                </div>
+            `;
+
+            // Focus on click
+            win.addEventListener('mousedown', () => bringToFront(win));
+
+            document.getElementById('window-area').appendChild(win);
+            activeWindows[key] = win;
+        }
+
+        function closeWindow(key) {
+            const win = activeWindows[key];
+            if (win) {
+                win.style.opacity = '0';
+                win.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    win.remove();
+                    delete activeWindows[key];
+                    document.getElementById(`dock-${key}`).classList.remove('active');
+                }, 200);
+            }
+        }
+
+        function minimizeWindow(key) {
+            const win = activeWindows[key];
+            if (win) {
+                win.style.transform = 'scale(0.8) translateY(100px)';
+                win.style.opacity = '0';
+                setTimeout(() => {
+                    win.style.display = 'none';
+                    // Reset styles for next open
+                    win.style.transform = 'scale(1)';
+                    win.style.opacity = '1';
+                }, 200);
+            }
+        }
+
+        function maximizeWindow(key) {
+            const win = activeWindows[key];
+            if(!win) return;
+            
+            if (win.getAttribute('data-max') === 'true') {
+                // Restore
+                win.style.width = win.dataset.prevW;
+                win.style.height = win.dataset.prevH;
+                win.style.left = win.dataset.prevX;
+                win.style.top = win.dataset.prevY;
+                win.setAttribute('data-max', 'false');
+            } else {
+                // Maximize
+                // Save current state
+                win.dataset.prevW = win.style.width;
+                win.dataset.prevH = win.style.height;
+                win.dataset.prevX = win.style.left;
+                win.dataset.prevY = win.style.top;
+                
+                win.style.width = '100%';
+                win.style.height = '100%';
+                win.style.left = '0';
+                win.style.top = '0';
+                win.setAttribute('data-max', 'true');
+            }
+            bringToFront(win);
+        }
+
+        function bringToFront(win) {
+            zIndex++;
+            win.style.zIndex = zIndex;
+            
+            // Visual active state
+            document.querySelectorAll('.window').forEach(w => w.classList.remove('active-win'));
+            win.classList.add('active-win');
+        }
+
+        // --- DRAG LOGIC ---
+        let isDragging = false;
+        let dragTarget = null;
+        let offset = { x: 0, y: 0 };
+
+        function startDrag(e, key) {
+            const win = activeWindows[key];
+            if (win.getAttribute('data-max') === 'true') return; // Can't drag maximized
+
+            isDragging = true;
+            dragTarget = win;
+            bringToFront(win);
+
+            const rect = win.getBoundingClientRect();
+            // Account for the window area offset if needed, but here absolute matches screen mostly
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+
+            win.classList.add('dragging');
+            document.body.style.userSelect = 'none';
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging || !dragTarget) return;
+            
+            let x = e.clientX - offset.x;
+            let y = e.clientY - offset.y;
+            
+            // Constraints
+            if (y < 0) y = 0; // Prevent going above top bar
+
+            dragTarget.style.left = x + 'px';
+            dragTarget.style.top = y + 'px';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            if (dragTarget) dragTarget.classList.remove('dragging');
+            dragTarget = null;
+            document.body.style.userSelect = '';
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+    </script>
+</body>
+</html>
+
