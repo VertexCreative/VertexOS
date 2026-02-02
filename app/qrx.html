@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR-X | Vector Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { tech: ['Orbitron', 'sans-serif'], sans: ['Inter', 'sans-serif'] },
+                    colors: { brand: '#f43f5e', dark: '#050505', card: '#0f0f0f' },
+                    animation: { 
+                        'scan': 'scan 2s linear infinite',
+                        'pulse-slow': 'pulse 3s infinite'
+                    },
+                    keyframes: {
+                        scan: { '0%, 100%': { top: '0%' }, '50%': { top: '100%' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #fff; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        .glass {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 50px rgba(244, 63, 94, 0.1);
+        }
+
+        .input-tech {
+            background: #0a0a0a; border: 1px solid #333; color: white; padding: 14px;
+            width: 100%; border-radius: 8px; outline: none; transition: 0.3s; font-family: 'Inter', sans-serif;
+        }
+        .input-tech:focus { border-color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+
+        #qrcode img { display: block; margin: 0 auto; }
+
+        .laser-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: #f43f5e; box-shadow: 0 0 10px #f43f5e, 0 0 20px #f43f5e;
+            z-index: 10; opacity: 0;
+        }
+        .scanning .laser-line { opacity: 1; animation: scan 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+
+    <div class="w-full max-w-lg p-6 relative z-10">
+
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 border border-brand/30 px-3 py-1 rounded-full bg-brand/5 mb-4">
+                <i data-lucide="qr-code" class="w-4 h-4 text-brand"></i>
+                <span class="text-brand text-xs font-bold tracking-widest font-tech">V.2.0.1</span>
+            </div>
+            <h1 class="text-5xl font-bold font-tech tracking-tight mb-2">QR<span class="text-brand">-X</span></h1>
+            <p class="text-zinc-500 text-sm">High-Density Matrix Generator</p>
+        </div>
+
+        <div class="glass rounded-2xl p-8 relative overflow-hidden">
+
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-2 block">Target Data (URL / Text)</label>
+                    <div class="relative">
+                        <input id="qr-input" type="text" class="input-tech pl-10" placeholder="https://nexus.com">
+                        <i data-lucide="link" class="w-4 h-4 absolute left-3.5 top-4 text-zinc-500"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-zinc-500 uppercase mb-2 block">Size</label>
+                        <select id="qr-size" class="input-tech">
+                            <option value="128">Small (128px)</option>
+                            <option value="200" selected>Standard (200px)</option>
+                            <option value="300">HD (300px)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-zinc-500 uppercase mb-2 block">Color Mode</label>
+                        <select id="qr-color" class="input-tech">
+                            <option value="#000000">Classic Black</option>
+                            <option value="#f43f5e">Neon Red</option>
+                            <option value="#2563eb">Cyber Blue</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="btn-gen" onclick="startSequence()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold font-tech py-4 rounded-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <i id="btn-icon" data-lucide="zap" class="w-5 h-5 fill-current"></i> 
+                    <span id="btn-text">INITIALIZE GENERATOR</span>
+                </button>
+            </div>
+
+            <div id="output-stage" class="hidden mt-8 pt-8 border-t border-zinc-800 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4">
+
+                <div id="qr-frame" class="relative bg-white p-4 rounded-xl shadow-2xl overflow-hidden group mb-6">
+                    <div class="laser-line"></div>
+                    <div id="qrcode"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 w-full">
+                    <button onclick="downloadQR('png')" class="bg-brand hover:bg-rose-600 text-white font-bold py-3 rounded-lg text-xs tracking-wider transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(244,63,150,0.4)]">
+                        <i data-lucide="download" class="w-4 h-4"></i> SAVE PNG
+                    </button>
+                    <button onclick="downloadQR('jpeg')" class="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-lg text-xs tracking-wider transition flex items-center justify-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4"></i> SAVE JPG
+                    </button>
+                </div>
+
+                <button onclick="reset()" class="mt-4 text-xs text-zinc-500 hover:text-white underline">Create New Code</button>
+
+            </div>
+
+        </div>
+
+        <p class="text-center text-zinc-700 text-[10px] mt-8 font-tech tracking-widest">NO SERVER // INSTANT RENDER</p>
+    </div>
+
+    <script>
+        window.onload = () => lucide.createIcons();
+        let qrcodeObj = null;
+
+        async function startSequence() {
+            const input = document.getElementById('qr-input').value;
+            if(!input) return alert("Please enter a URL or Text!");
+
+            const btn = document.getElementById('btn-gen');
+            const icon = document.getElementById('btn-icon');
+            const text = document.getElementById('btn-text');
+            const output = document.getElementById('output-stage');
+            const frame = document.getElementById('qr-frame');
+
+            // 1. Loading State
+            output.classList.add('hidden');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            text.innerText = "PROCESSING...";
+            icon.classList.add('animate-spin');
+
+            // 2. Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            // 3. Generate
+            generateQR(input);
+
+            // 4. Reveal
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            text.innerText = "REGENERATE";
+            icon.classList.remove('animate-spin');
+
+            output.classList.remove('hidden');
+
+            // 5. Trigger Laser
+            frame.classList.add('scanning');
+            setTimeout(() => frame.classList.remove('scanning'), 2000);
+        }
+
+        function generateQR(text) {
+            const container = document.getElementById("qrcode");
+            const color = document.getElementById("qr-color").value;
+            const size = parseInt(document.getElementById("qr-size").value);
+
+            container.innerHTML = ""; 
+
+            qrcodeObj = new QRCode(container, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark : color,
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        // SAVE FUNCTION
+        function downloadQR(format) {
+            // Find the image created by the library
+            const img = document.querySelector("#qrcode img");
+
+            if(img && img.src) {
+                const link = document.createElement("a");
+                link.href = img.src;
+                // Set filename based on format
+                link.download = `QR-X_Code.${format}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert("Please generate a code first!");
+            }
+        }
+
+        function reset() {
+            document.getElementById('qr-input').value = '';
+            document.getElementById('output-stage').classList.add('hidden');
+            document.getElementById('btn-text').innerText = "INITIALIZE GENERATOR";
+        }
+    </script>
+</body>
+</html>
