@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TYPE-X | Speed Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { mono: ['JetBrains Mono', 'monospace'], head: ['Orbitron', 'sans-serif'] },
+                    colors: { cyber: '#00ff41', dark: '#050505', err: '#ff003c' },
+                    animation: { 'blink': 'blink 1s infinite' },
+                    keyframes: { blink: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0 } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        /* The Cursor */
+        .caret {
+            border-left: 2px solid #00ff41;
+            animation: blink 1s infinite;
+            margin-left: -2px;
+        }
+
+        /* Letter States */
+        .correct { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+        .incorrect { color: #ff003c; text-decoration: underline; }
+        .pending { color: #444; }
+
+        /* Blur when not focused */
+        .blur-screen { filter: blur(5px); opacity: 0.5; transition: 0.3s; }
+
+        /* Laser line for loader */
+        .loader-bar {
+            height: 2px; background: #00ff41; width: 0%;
+            box-shadow: 0 0 10px #00ff41;
+            transition: width 2s linear;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-3xl p-6 relative">
+
+        <div class="flex justify-between items-end mb-8 border-b border-zinc-800 pb-4">
+            <div>
+                <h1 class="font-head text-3xl tracking-widest text-cyber drop-shadow-[0_0_10px_rgba(0,255,65,0.5)]">TYPE-X</h1>
+                <p class="text-[10px] text-zinc-600 font-mono tracking-[0.3em]">NEURAL LINK ESTABLISHED</p>
+            </div>
+            <div class="flex gap-8 font-mono text-xl">
+                <div class="text-center">
+                    <div class="text-[10px] text-zinc-500 uppercase">Time</div>
+                    <div id="timer" class="text-white font-bold">30</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-[10px] text-zinc-500 uppercase">WPM</div>
+                    <div id="wpm" class="text-cyber font-bold">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-[10px] text-zinc-500 uppercase">Acc</div>
+                    <div id="acc" class="text-zinc-400 font-bold">100%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative h-48">
+
+            <div id="start-overlay" class="absolute inset-0 z-20 flex flex-col items-center justify-center glass-panel rounded-xl">
+                <button onclick="bootSequence()" class="group relative px-8 py-4 bg-zinc-900 overflow-hidden rounded-lg border border-zinc-700 hover:border-cyber transition">
+                    <div class="absolute inset-0 w-0 bg-cyber transition-all duration-[250ms] ease-out group-hover:w-full opacity-10"></div>
+                    <span class="relative text-cyber font-mono font-bold tracking-widest flex items-center gap-3">
+                        <i data-lucide="power" class="w-5 h-5"></i> INITIALIZE SYSTEM
+                    </span>
+                </button>
+            </div>
+
+            <div id="loader-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-black rounded-xl border border-zinc-800">
+                <div class="w-64 bg-zinc-900 h-[2px] rounded-full overflow-hidden">
+                    <div id="loading-bar" class="loader-bar"></div>
+                </div>
+                <div class="mt-4 font-mono text-xs text-cyber animate-pulse">CALIBRATING KEYBOARD...</div>
+            </div>
+
+            <div id="game-ui" class="hidden absolute inset-0 z-10 p-8 glass-panel rounded-xl flex items-center flex-wrap content-start overflow-hidden select-none cursor-text" onclick="focusInput()">
+                <div id="words" class="font-mono text-2xl leading-relaxed break-all w-full">
+                    </div>
+                <div id="focus-msg" class="absolute inset-0 flex items-center justify-center bg-black/80 text-zinc-500 font-mono text-sm hidden">
+                    <i data-lucide="mouse-pointer-2" class="w-4 h-4 mr-2"></i> CLICK TO RESUME
+                </div>
+            </div>
+
+            <div id="result-overlay" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center glass-panel rounded-xl bg-black/95">
+                <div class="text-center">
+                    <div class="text-zinc-500 text-xs font-mono mb-2">SESSION COMPLETE</div>
+                    <div id="final-wpm" class="text-6xl font-head text-white mb-1">0</div>
+                    <div class="text-cyber font-bold font-mono mb-6">WPM</div>
+
+                    <button onclick="resetGame()" class="px-6 py-2 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 font-mono text-xs rounded transition flex items-center gap-2 mx-auto">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> RESTART
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <p class="text-center mt-8 text-zinc-700 font-mono text-[10px]">
+            TAB + ENTER TO RESTART // CLICK TO FOCUS
+        </p>
+    </div>
+
+    <input type="text" id="hidden-input" class="opacity-0 absolute -top-full" autocomplete="off">
+
+    <script>
+        // --- DATA ---
+        const WORD_LIST = [
+            "system", "data", "nexus", "cyber", "code", "react", "pixel", "link", "node", "java", 
+            "script", "matrix", "cloud", "server", "proxy", "admin", "root", "user", "shell", "bash",
+            "stack", "queue", "heap", "array", "loop", "logic", "scope", "async", "await", "fetch",
+            "deploy", "build", "debug", "error", "fatal", "null", "void", "class", "model", "view"
+        ];
+
+        let timeLeft = 30;
+        let timer = null;
+        let isPlaying = false;
+        let words = [];
+        let wordIndex = 0;
+        let charIndex = 0;
+        let correctChars = 0;
+        let totalCharsTyped = 0;
+
+        // --- INIT ---
+        window.onload = () => lucide.createIcons();
+
+        // --- 1. BOOT SEQUENCE (2 SECONDS) ---
+        async function bootSequence() {
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('result-overlay').classList.add('hidden');
+            document.getElementById('loader-overlay').classList.remove('hidden');
+
+            // Trigger Animation
+            setTimeout(() => {
+                document.getElementById('loading-bar').style.width = "100%";
+            }, 100);
+
+            // Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            // Start Game
+            document.getElementById('loader-overlay').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+
+            // Reset Loader for next time
+            document.getElementById('loading-bar').style.width = "0%";
+
+            startGame();
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            // Reset Stats
+            timeLeft = 30;
+            wordIndex = 0;
+            charIndex = 0;
+            correctChars = 0;
+            totalCharsTyped = 0;
+            isPlaying = true;
+
+            document.getElementById('timer').innerText = timeLeft;
+            document.getElementById('wpm').innerText = '0';
+            document.getElementById('acc').innerText = '100%';
+
+            // Generate Words
+            generateWords();
+            renderWords();
+
+            // Focus Input
+            const input = document.getElementById('hidden-input');
+            input.value = '';
+            input.focus();
+
+            // Start Timer
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft;
+
+                // Live WPM Calc
+                const wpm = Math.round((correctChars / 5) / ((30 - timeLeft) / 60)) || 0;
+                document.getElementById('wpm').innerText = wpm;
+
+                if(timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function generateWords() {
+            words = [];
+            for(let i=0; i<50; i++) {
+                words.push(WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]);
+            }
+        }
+
+        function renderWords() {
+            const container = document.getElementById('words');
+            container.innerHTML = '';
+
+            words.forEach((word, wIdx) => {
+                const wSpan = document.createElement('span');
+                wSpan.className = 'mr-3 whitespace-nowrap inline-block'; // Word wrapper
+
+                word.split('').forEach((char, cIdx) => {
+                    const cSpan = document.createElement('span');
+                    cSpan.innerText = char;
+                    cSpan.className = 'pending transition-colors duration-75';
+                    cSpan.id = `w${wIdx}c${cIdx}`; // ID for easy access
+                    wSpan.appendChild(cSpan);
+                });
+
+                container.appendChild(wSpan);
+            });
+
+            updateCursor();
+        }
+
+        // --- INPUT HANDLING ---
+        document.getElementById('hidden-input').addEventListener('input', (e) => {
+            if(!isPlaying) return;
+
+            const inputVal = e.target.value;
+            const currentWord = words[wordIndex];
+
+            // Handle Spacebar (Next Word)
+            if(inputVal.endsWith(' ')) {
+                e.target.value = ''; // Clear input
+
+                // Mark missed chars in current word as incorrect
+                for(let i=charIndex; i<currentWord.length; i++) {
+                    const charEl = document.getElementById(`w${wordIndex}c${i}`);
+                    charEl.className = 'incorrect opacity-50'; 
+                }
+
+                wordIndex++;
+                charIndex = 0;
+                updateCursor();
+                return;
+            }
+
+            // Handle Typing Chars
+            const typedChar = inputVal.slice(-1);
+            const targetChar = currentWord[charIndex];
+            const charEl = document.getElementById(`w${wordIndex}c${charIndex}`);
+
+            if(charEl) {
+                totalCharsTyped++;
+                if(typedChar === targetChar) {
+                    charEl.className = 'correct';
+                    correctChars++;
+                } else {
+                    charEl.className = 'incorrect';
+                }
+
+                // Update Accuracy
+                const acc = Math.round((correctChars / totalCharsTyped) * 100);
+                document.getElementById('acc').innerText = acc + "%";
+
+                charIndex++;
+                updateCursor();
+            } else {
+                // Typed more letters than word has (Overflow) - ignore or mark error
+                e.target.value = inputVal.slice(0, -1);
+            }
+        });
+
+        // Delete / Backspace handling
+        document.getElementById('hidden-input').addEventListener('keydown', (e) => {
+            if(e.key === 'Backspace' && charIndex > 0) {
+                charIndex--;
+                const charEl = document.getElementById(`w${wordIndex}c${charIndex}`);
+                charEl.className = 'pending';
+                updateCursor();
+            }
+        });
+
+        function updateCursor() {
+            // Remove old cursor
+            document.querySelectorAll('.caret').forEach(el => el.classList.remove('caret'));
+
+            // Add new cursor
+            const charEl = document.getElementById(`w${wordIndex}c${charIndex}`);
+            if(charEl) {
+                charEl.classList.add('caret');
+                // Auto scroll logic could go here
+            }
+        }
+
+        // --- END GAME ---
+        function endGame() {
+            clearInterval(timer);
+            isPlaying = false;
+            const finalWpm = Math.round((correctChars / 5) / 0.5); // 0.5 because 30s is half a minute
+
+            document.getElementById('final-wpm').innerText = finalWpm;
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('result-overlay').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            bootSequence();
+        }
+
+        // --- UTILS ---
+        function focusInput() {
+            document.getElementById('hidden-input').focus();
+            document.getElementById('focus-msg').classList.add('hidden');
+            document.getElementById('words').classList.remove('blur-screen');
+        }
+
+        // Blur if clicking outside
+        document.getElementById('hidden-input').addEventListener('blur', () => {
+            if(isPlaying) {
+                document.getElementById('focus-msg').classList.remove('hidden');
+                document.getElementById('words').classList.add('blur-screen');
+            }
+        });
+    </script>
+</body>
+</html>
