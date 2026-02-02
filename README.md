@@ -1,66 +1,72 @@
-# VERTEX OS 4.0 | Aero Edition 💠
+# VERTEX OS 5.0 | Professional Edition 💼
 
-![Version](https://img.shields.io/badge/VERSION-4.0.0_AERO-3b82f6?style=for-the-badge)
-![Status](https://img.shields.io/badge/STATUS-STABLE-00ff41?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-5.0.0_PRO-007AFF?style=for-the-badge)
+![Status](https://img.shields.io/badge/STATUS-ENTERPRISE_READY-000000?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-ffffff?style=for-the-badge)
 
 ## 📂 Overview
 
-**Vertex OS 4.0** is a next-generation web-based operating system designed by **Vertex Creative**. It bridges the gap between desktop and web by implementing a full window management system, taskbar logic, and a high-end "Aero" aesthetic inspired by Windows 11 and One UI.
+**Vertex OS 5.0** is the ultimate iteration of the Vertex Creative web operating system. Moving beyond visual aesthetics, this version introduces **functional state logic**, a system-wide notification engine, and a "Mica" material design language inspired by professional desktop environments.
 
-> **Design Philosophy:** "Glass, Light, and Motion." Every element features real-time acrylic blur (`backdrop-filter`), squircle iconography, and fluid 60FPS animations.
-
----
-
-## ✨ System Features
-
-### 🖥️ Desktop Environment
-* **Mica Effect:** Real-time glassmorphism on windows, taskbars, and menus.
-* **Dynamic Wallpaper:** Background scales and blurs when menus are active (Depth Effect).
-* **Fluid Animations:** All transitions utilize `cubic-bezier` curves for ultra-smooth motion.
-
-### 🪟 Window Manager
-* **Multi-Tasking:** Open multiple apps simultaneously.
-* **Controls:** Minimize, Maximize, and Close logic with state memory.
-* **Focus Engine:** Clicking a window brings it to the Z-index foreground.
-* **Drag & Drop:** Physics-based window movement.
-
-### 🚀 Shell Interface
-* **Center Taskbar:** Floating dock with dynamic active indicators.
-* **Start Menu:** Blurred app drawer with "Pinned Apps" and search.
-* **Control Center:** iOS/One UI style quick settings for Wi-Fi, Bluetooth, and Brightness.
+> **CEO Note:** "We removed the 'junior developer' feel. Every button clicks, every toggle works, and every interaction provides system feedback." — *Fahad Malik, Founder*
 
 ---
 
-## 📦 The App Ecosystem
+## ✨ Pro Features (v5.0)
 
-Vertex OS comes pre-installed with the **Nexus Suite**, a collection of serverless professional tools:
+### 💠 Visual Intelligence
+* **Mica Material:** Advanced glassmorphism using `backdrop-filter: blur(50px)` for a deep, premium feel.
+* **Dynamic Desktop:** The wallpaper reacts to UI states (scaling and blurring when menus are active).
+* **Toast Engine:** A built-in notification system that alerts users when hardware (Wi-Fi/Bluetooth) states change.
 
-| App Name | Description | Category |
-| :--- | :--- | :--- |
-| **PassForge** | Military-grade password generator with entropy visualization. | Security |
-| **QR-X** | High-density QR code generator with vector export. | Utility |
-| **Lumix Pro** | Chromatic intelligence engine for color palette generation. | Design |
-| **Type-X** | Gamified WPM typing accelerator and test. | Productivity |
-| **RefleX** | Esports-grade aim and reaction time trainer. | Gaming |
-| **Gravitas** | Particle physics sandbox with Newtonian gravity logic. | Simulation |
-| **Kinetix** | GUI-based CSS keyframe animation generator. | Dev Tool |
+### ⚙️ Functional Shell
+* **Real Search:** Type in the Start Menu to filter installed apps instantly.
+* **Quick Settings:** Functional Wi-Fi and Bluetooth toggles that simulate connection states.
+* **Context Menu:** Custom right-click menu for system refresh and fullscreen modes.
+* **Taskbar Logic:** Clicking an active app icon minimizes or restores the window, mirroring real OS behavior.
+
+### 🪟 Window Management
+* **State Memory:** Windows remember their previous size/position when restoring from minimize.
+* **Focus Engine:** Active windows glow and rise to the top Z-index.
+* **Drag Physics:** Smooth, constraint-aware window movement.
 
 ---
 
-## 🛠️ Installation & Setup
+## 📦 The App Suite
 
-### Folder Structure
-Ensure your directory looks exactly like this:
+Vertex OS 5.0 includes the complete **Vertex Creative Toolset**:
+
+| App Icon | App Name | Description |
+| :---: | :--- | :--- |
+| 🛡️ | **PassForge** | Entropy-based password security engine. |
+| ⬛ | **QR-X** | Vector QR code generator. |
+| 🎨 | **Lumix Pro** | Chromatic color palette studio. |
+| ⌨️ | **Type-X** | WPM productivity accelerator. |
+| 🎯 | **RefleX** | Esports reaction time trainer. |
+| 🌌 | **Gravitas** | Particle physics sandbox. |
+| 🎞️ | **Kinetix** | CSS animation motion studio. |
+| 🧠 | **SeQ-X** | Cognitive pattern memory trainer. |
+
+---
+
+## 🛠️ Installation & Architecture
+
+**⚠️ CRITICAL SETUP INSTRUCTIONS:**
+This system uses `<iframe>` architecture. Due to browser security policies (CORS), it **must** be run on a server.
+
+### 1. Folder Structure
+Ensure your directory matches this **exact** layout:
+
 ```text
 /VertexOS
-  ├── index.html        (The Main OS File)
+  ├── index.html        (The Main OS Kernel)
   ├── README.md
-  └── apps/             (Subfolder containing all tools)
+  └── app/              <-- NOTE: Folder name is singular "app"
        ├── passforge.html
        ├── qrx.html
-       ├── lumix.html
+       ├── lumixpro.html
        ├── typex.html
        ├── reflex.html
        ├── gravitas.html
-       └── kinetix.html
+       ├── kinetix.html
+       └── seqx.html
