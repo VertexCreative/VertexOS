@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassForge | Security Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { mono: ['Space Mono', 'monospace'], tech: ['Rajdhani', 'sans-serif'] },
+                    colors: { cyber: '#0ea5e9', dark: '#020617', panel: '#0f172a' },
+                    animation: { 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: #fff; font-family: 'Rajdhani', sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        /* Grid Background */
+        .grid-bg {
+            position: absolute; inset: 0; z-index: -1;
+            background-image: linear-gradient(rgba(14, 165, 233, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(14, 165, 233, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            box-shadow: 0 0 40px rgba(14, 165, 233, 0.1);
+        }
+
+        /* Range Slider */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #0ea5e9; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px #0ea5e9;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #1e293b; border-radius: 2px;
+        }
+
+        /* Checkbox */
+        .check-box { appearance: none; width: 20px; height: 20px; border: 1px solid #334155; border-radius: 4px; background: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .check-box:checked { background: #0ea5e9; border-color: #0ea5e9; }
+        .check-box:checked::after { content: '✔'; font-size: 12px; color: black; font-weight: bold; }
+    </style>
+</head>
+<body class="relative">
+
+    <div class="grid-bg"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
+
+    <div class="w-full max-w-md p-6">
+
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center gap-2 border border-cyber/30 px-3 py-1 rounded-full bg-cyber/10 mb-4">
+                <div class="w-2 h-2 bg-cyber rounded-full animate-pulse-fast"></div>
+                <span class="text-cyber text-xs font-bold tracking-widest uppercase">System Secure</span>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight text-white mb-1">PASS<span class="text-cyber">FORGE</span></h1>
+            <p class="text-slate-400 text-sm">Military Grade Encryption Generator</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 space-y-6 relative overflow-hidden group">
+
+            <div class="relative">
+                <div id="password-display" class="w-full bg-black/50 border border-slate-700 p-5 rounded-xl text-center font-mono text-xl tracking-wider text-white break-all hover:border-cyber/50 transition cursor-pointer select-all" onclick="copyPass()">
+                    INITIALIZING...
+                </div>
+                <div id="copy-feedback" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-cyber text-black font-bold px-3 py-1 rounded text-xs opacity-0 transition pointer-events-none">COPIED</div>
+            </div>
+
+            <div class="flex h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                <div id="strength-bar" class="w-0 bg-red-500 h-full transition-all duration-500"></div>
+            </div>
+            <p id="strength-text" class="text-xs text-right text-slate-500 font-mono uppercase">Analyzing...</p>
+
+            <div class="space-y-4 pt-2">
+                <div>
+                    <div class="flex justify-between text-sm font-bold text-slate-300 mb-2">
+                        <span>LENGTH</span>
+                        <span id="len-val" class="text-cyber">16</span>
+                    </div>
+                    <input type="range" id="length" min="6" max="32" value="16" class="w-full" oninput="document.getElementById('len-val').innerText = this.value">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-white/5 transition">
+                        <input type="checkbox" id="inc-upper" class="check-box" checked>
+                        <span class="text-sm font-bold text-slate-300">Uppercase</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-white/5 transition">
+                        <input type="checkbox" id="inc-num" class="check-box" checked>
+                        <span class="text-sm font-bold text-slate-300">Numbers</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-white/5 transition">
+                        <input type="checkbox" id="inc-sym" class="check-box" checked>
+                        <span class="text-sm font-bold text-slate-300">Symbols</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-white/5 transition">
+                        <input type="checkbox" id="inc-lower" class="check-box" checked disabled>
+                        <span class="text-sm font-bold text-slate-500">Lowercase (Lock)</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="btn-generate" onclick="startForge()" class="w-full bg-cyber hover:bg-cyan-400 text-black font-bold py-4 rounded-xl text-lg tracking-widest transition shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_40px_rgba(14,165,233,0.5)] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i id="btn-icon" data-lucide="refresh-cw" class="w-5 h-5"></i> 
+                <span id="btn-text">REGENERATE</span>
+            </button>
+        </div>
+
+        <p class="text-center text-slate-600 text-xs mt-6 font-mono">100% CLIENT-SIDE // NO SERVER STORAGE</p>
+    </div>
+
+    <script>
+        // INIT
+        window.onload = () => {
+            lucide.createIcons();
+            // Generate immediately on load without animation
+            generatePass(false); 
+        };
+
+        const CHARS = {
+            upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            lower: "abcdefghijklmnopqrstuvwxyz",
+            num: "0123456789",
+            sym: "!@#$%^&*()_+~`|}{[]:;?><,./-="
+        };
+
+        async function startForge() {
+            const btn = document.getElementById('btn-generate');
+            const icon = document.getElementById('btn-icon');
+            const text = document.getElementById('btn-text');
+
+            // 1. Loading State
+            btn.disabled = true;
+            text.innerText = "FORGING...";
+            icon.classList.add('animate-spin'); // This makes the icon spin
+
+            // 2. Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            // 3. Generate & Reset
+            generatePass(true);
+
+            btn.disabled = false;
+            text.innerText = "REGENERATE";
+            icon.classList.remove('animate-spin');
+        }
+
+        function generatePass(animate) {
+            const len = document.getElementById('length').value;
+            const incUpper = document.getElementById('inc-upper').checked;
+            const incNum = document.getElementById('inc-num').checked;
+            const incSym = document.getElementById('inc-sym').checked;
+
+            let pool = CHARS.lower;
+            if(incUpper) pool += CHARS.upper;
+            if(incNum) pool += CHARS.num;
+            if(incSym) pool += CHARS.sym;
+
+            let password = "";
+            const array = new Uint32Array(len);
+            window.crypto.getRandomValues(array);
+
+            for(let i=0; i<len; i++) {
+                password += pool[array[i] % pool.length];
+            }
+
+            const display = document.getElementById('password-display');
+            display.innerText = password;
+
+            // Visual Flash Effect on new password
+            if(animate) {
+                display.classList.add('text-cyber', 'scale-105');
+                setTimeout(() => display.classList.remove('text-cyber', 'scale-105'), 200);
+            }
+
+            checkStrength(password, len, incUpper, incNum, incSym);
+        }
+
+        function checkStrength(pass, len, upper, num, sym) {
+            let score = 0;
+            if(len > 8) score++;
+            if(len > 12) score++;
+            if(upper) score++;
+            if(num) score++;
+            if(sym) score++;
+
+            const bar = document.getElementById('strength-bar');
+            const txt = document.getElementById('strength-text');
+
+            bar.className = "h-full transition-all duration-500 w-0";
+
+            setTimeout(() => {
+                if(score < 3) {
+                    bar.classList.add('w-1/3', 'bg-red-500', 'shadow-[0_0_10px_red]');
+                    txt.innerText = "WEAK // VULNERABLE";
+                    txt.className = "text-xs text-right text-red-500 font-mono uppercase font-bold";
+                } else if (score < 5) {
+                    bar.classList.add('w-2/3', 'bg-yellow-400', 'shadow-[0_0_10px_orange]');
+                    txt.innerText = "MODERATE // ACCEPTABLE";
+                    txt.className = "text-xs text-right text-yellow-500 font-mono uppercase font-bold";
+                } else {
+                    bar.classList.add('w-full', 'bg-green-500', 'shadow-[0_0_10px_#00ff00]');
+                    txt.innerText = "STRONG // UNBREAKABLE";
+                    txt.className = "text-xs text-right text-green-500 font-mono uppercase font-bold";
+                }
+            }, 50);
+        }
+
+        function copyPass() {
+            const txt = document.getElementById('password-display').innerText;
+            navigator.clipboard.writeText(txt);
+
+            const badge = document.getElementById('copy-feedback');
+            badge.classList.remove('opacity-0');
+            badge.classList.add('animate-bounce');
+            setTimeout(() => {
+                badge.classList.add('opacity-0');
+                badge.classList.remove('animate-bounce');
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
