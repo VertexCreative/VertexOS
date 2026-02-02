@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KINETIX | Motion Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { brand: ['Space Grotesk', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { accent: '#6366f1', dark: '#020617', panel: '#0f172a' },
+                    boxShadow: { 'glow': '0 0 40px rgba(99, 102, 241, 0.2)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Grid Background */
+        .grid-bg {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0.1;
+            background-image: radial-gradient(#6366f1 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* The Preview Cube */
+        .cube {
+            width: 80px; height: 80px; background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-radius: 16px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Sliders */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%;
+            background: #fff; cursor: pointer; margin-top: -5px; box-shadow: 0 0 10px white;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px;
+        }
+
+        /* Loader */
+        .loader-bar { height: 2px; background: #6366f1; width: 0%; transition: width 2s linear; }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <div id="view-load" class="absolute inset-0 bg-dark z-50 flex flex-col items-center justify-center">
+        <div class="w-64 bg-zinc-900 h-[2px] mb-4 overflow-hidden">
+            <div id="boot-bar" class="loader-bar"></div>
+        </div>
+        <div class="font-mono text-xs text-accent animate-pulse">LOADING ANIMATION DRIVERS...</div>
+    </div>
+
+    <div id="main-ui" class="relative z-10 w-full max-w-5xl mx-auto h-full p-6 flex flex-col hidden opacity-0 transition-opacity duration-1000">
+
+        <header class="flex justify-between items-center mb-10 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center border border-accent/30">
+                    <i data-lucide="activity" class="w-5 h-5 text-accent"></i>
+                </div>
+                <div>
+                    <h1 class="font-brand text-2xl font-bold tracking-tight">KINETIX</h1>
+                    <p class="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">CSS Motion Studio</p>
+                </div>
+            </div>
+            <button onclick="copyCode()" class="bg-white text-black px-6 py-2 rounded-lg font-bold text-xs hover:bg-zinc-200 transition flex items-center gap-2">
+                <i data-lucide="code-2" class="w-4 h-4"></i> COPY CSS
+            </button>
+        </header>
+
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-12">
+
+            <div class="space-y-8 bg-panel/50 p-8 rounded-2xl border border-white/5 backdrop-blur-sm">
+
+                <div>
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-3 block">Animation Type</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="setAnim('float')" id="btn-float" class="anim-btn bg-accent text-white py-2 rounded text-xs font-bold transition">Float</button>
+                        <button onclick="setAnim('pulse')" id="btn-pulse" class="anim-btn bg-zinc-800 text-zinc-400 py-2 rounded text-xs font-bold transition hover:bg-zinc-700">Pulse</button>
+                        <button onclick="setAnim('spin')" id="btn-spin" class="anim-btn bg-zinc-800 text-zinc-400 py-2 rounded text-xs font-bold transition hover:bg-zinc-700">Spin</button>
+                        <button onclick="setAnim('shake')" id="btn-shake" class="anim-btn bg-zinc-800 text-zinc-400 py-2 rounded text-xs font-bold transition hover:bg-zinc-700">Shake</button>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-zinc-400">DURATION</span>
+                            <span id="val-dur" class="text-white">3s</span>
+                        </div>
+                        <input type="range" id="rng-dur" min="0.5" max="5" step="0.1" value="3" oninput="updateSettings()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-zinc-400">INTENSITY</span>
+                            <span id="val-int" class="text-white">20px</span>
+                        </div>
+                        <input type="range" id="rng-int" min="5" max="100" value="20" oninput="updateSettings()">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-3 block">Easing Curve</label>
+                    <select id="sel-ease" onchange="updateSettings()" class="w-full bg-black border border-zinc-700 rounded p-3 text-xs text-white outline-none focus:border-accent">
+                        <option value="ease-in-out">Ease-In-Out (Smooth)</option>
+                        <option value="linear">Linear (Constant)</option>
+                        <option value="ease-out">Ease-Out (Decelerate)</option>
+                        <option value="cubic-bezier(0.68, -0.55, 0.27, 1.55)">Elastic (Bouncy)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="relative bg-[#050505] rounded-2xl border border-white/5 flex items-center justify-center overflow-hidden">
+                <div class="absolute inset-0 opacity-20" style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+                <div id="preview-obj" class="cube">
+                    <i data-lucide="box" class="w-8 h-8 text-white/50"></i>
+                </div>
+
+                <div class="absolute bottom-4 left-4 right-4 bg-black/80 border border-white/10 p-3 rounded-lg">
+                    <div class="text-[10px] text-zinc-500 font-mono mb-1">LIVE CSS OUTPUT</div>
+                    <code id="css-preview" class="text-[10px] font-mono text-accent block whitespace-nowrap overflow-hidden text-ellipsis">animation: float 3s ease-in-out infinite;</code>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <style id="dynamic-css"></style>
+
+    <script>
+        window.onload = () => {
+            lucide.createIcons();
+            initLoad();
+        };
+
+        // STATE
+        let currentAnim = 'float';
+        let settings = { duration: 3, intensity: 20, ease: 'ease-in-out' };
+
+        // --- 1. BOOT SEQUENCE ---
+        async function initLoad() {
+            const bar = document.getElementById('boot-bar');
+            const loadScreen = document.getElementById('view-load');
+            const ui = document.getElementById('main-ui');
+
+            setTimeout(() => bar.style.width = "100%", 50);
+
+            await new Promise(r => setTimeout(r, 2000));
+
+            loadScreen.classList.add('hidden');
+            ui.classList.remove('hidden');
+            setTimeout(() => ui.classList.remove('opacity-0'), 50);
+
+            updateSettings(); // Start animation
+        }
+
+        // --- 2. ENGINE ---
+        function setAnim(type) {
+            currentAnim = type;
+
+            // Update Buttons
+            document.querySelectorAll('.anim-btn').forEach(btn => {
+                btn.className = "anim-btn bg-zinc-800 text-zinc-400 py-2 rounded text-xs font-bold transition hover:bg-zinc-700";
+            });
+            const activeBtn = document.getElementById(`btn-${type}`);
+            activeBtn.className = "anim-btn bg-accent text-white py-2 rounded text-xs font-bold transition shadow-glow";
+
+            updateSettings();
+        }
+
+        function updateSettings() {
+            settings.duration = document.getElementById('rng-dur').value;
+            settings.intensity = document.getElementById('rng-int').value;
+            settings.ease = document.getElementById('sel-ease').value;
+
+            // Update Labels
+            document.getElementById('val-dur').innerText = `${settings.duration}s`;
+
+            let unit = 'px';
+            if(currentAnim === 'spin') unit = 'deg';
+            if(currentAnim === 'pulse') unit = '%';
+            document.getElementById('val-int').innerText = `${settings.intensity}${unit}`;
+
+            generateCSS();
+        }
+
+        function generateCSS() {
+            const styleTag = document.getElementById('dynamic-css');
+            const previewObj = document.getElementById('preview-obj');
+            const codePreview = document.getElementById('css-preview');
+
+            let keyframes = '';
+            let animName = `kinetix-${currentAnim}`;
+
+            // Generate Keyframes Logic
+            if(currentAnim === 'float') {
+                keyframes = `
+                    @keyframes ${animName} {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(-${settings.intensity}px); }
+                    }
+                `;
+            } else if (currentAnim === 'pulse') {
+                const scale = 1 + (settings.intensity / 100);
+                keyframes = `
+                    @keyframes ${animName} {
+                        0%, 100% { transform: scale(1); opacity: 1; }
+                        50% { transform: scale(${scale}); opacity: 0.8; }
+                    }
+                `;
+            } else if (currentAnim === 'spin') {
+                // Intensity maps to degrees (up to 360)
+                const deg = settings.intensity * 3.6; 
+                keyframes = `
+                    @keyframes ${animName} {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(${deg}deg); }
+                    }
+                `;
+            } else if (currentAnim === 'shake') {
+                const offset = settings.intensity / 2;
+                keyframes = `
+                    @keyframes ${animName} {
+                        0%, 100% { transform: translateX(0); }
+                        25% { transform: translateX(-${offset}px) rotate(-5deg); }
+                        75% { transform: translateX(${offset}px) rotate(5deg); }
+                    }
+                `;
+            }
+
+            // Inject CSS
+            styleTag.innerHTML = keyframes;
+
+            // Apply to Object
+            const cssLine = `${animName} ${settings.duration}s ${settings.ease} infinite`;
+            previewObj.style.animation = cssLine;
+
+            // Update Display
+            codePreview.innerText = `animation: ${cssLine};`;
+        }
+
+        function copyCode() {
+            const cssLine = document.getElementById('preview-obj').style.animation;
+            const fullCode = `
+/* Copy this into your CSS file */
+.element {
+    animation: ${cssLine};
+}
+
+${document.getElementById('dynamic-css').innerHTML}
+            `;
+
+            navigator.clipboard.writeText(fullCode.trim());
+            alert("CSS COPIED TO CLIPBOARD!");
+        }
+
+    </script>
+</body>
+</html>
