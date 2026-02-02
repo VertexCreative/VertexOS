@@ -3,387 +3,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vertex Creative | OS</title>
+    <title>Vertex OS | Aero</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
-                    colors: { os: '#050505', border: 'rgba(255,255,255,0.1)' },
-                    animation: { 'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)' },
-                    keyframes: { popIn: { '0%': { opacity: 0, transform: 'scale(0.95) translateY(10px)' }, '100%': { opacity: 1, transform: 'scale(1) translateY(0)' } } }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 
+                        'glass': 'rgba(20, 20, 20, 0.6)',
+                        'accent': '#3b82f6'
+                    },
+                    boxShadow: {
+                        'glass': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        'glow': '0 0 20px rgba(59, 130, 246, 0.5)'
+                    }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #000; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
-        
-        /* High-End Wallpaper */
+        body { background: #000; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
+
+        /* WALLPAPER */
         #desktop {
             position: absolute; inset: 0;
-            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') no-repeat center center;
+            background: url('https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2670&auto=format&fit=crop') no-repeat center center;
             background-size: cover; z-index: 0;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        #desktop::after {
-            content: ''; position: absolute; inset: 0;
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(0px); /* Adjust blur if needed */
+        #desktop.zoomed { transform: scale(1.05); filter: blur(10px); }
+
+        /* ACRYLIC BLUR */
+        .acrylic {
+            background: rgba(15, 15, 15, 0.75);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        /* The Pro Dock */
-        .dock-container {
+        /* TASKBAR */
+        .taskbar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px; border-radius: 24px;
-            display: flex; gap: 12px; z-index: 50;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: 0.3s;
+            display: flex; gap: 8px; padding: 8px; border-radius: 18px;
+            z-index: 100; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .dock-item {
-            width: 50px; height: 50px; border-radius: 14px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);
+        .task-icon {
+            width: 44px; height: 44px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            position: relative;
+            cursor: pointer; position: relative; transition: 0.2s;
+            background: rgba(255,255,255,0.03);
         }
-        .dock-item:hover { transform: translateY(-10px) scale(1.1); background: rgba(255,255,255,0.15); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        
-        /* Active Dot */
-        .dock-item.active::after {
-            content: ''; position: absolute; bottom: -6px; width: 4px; height: 4px;
-            background: white; border-radius: 50%;
+        .task-icon:hover { background: rgba(255,255,255,0.15); transform: translateY(-4px); }
+        .task-icon.open::after {
+            content: ''; position: absolute; bottom: -4px; width: 4px; height: 4px;
+            background: #60a5fa; border-radius: 50%; box-shadow: 0 0 8px #60a5fa;
+        }
+        .btn-start { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .btn-start:hover { background: rgba(59, 130, 246, 0.4); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+
+        /* START MENU */
+        #start-menu {
+            position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%);
+            width: 400px; height: 500px; border-radius: 24px;
+            display: flex; flex-direction: column; padding: 24px;
+            transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 90;
+        }
+        #start-menu.active { bottom: 90px; }
+
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+        .grid-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; padding: 10px; border-radius: 12px; transition: 0.2s;
+        }
+        .grid-item:hover { background: rgba(255,255,255,0.1); }
+        .app-icon-lg { 
+            width: 48px; height: 48px; border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #333, #111);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        .dock-tooltip {
-            position: absolute; top: -45px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);
-            padding: 4px 10px; border-radius: 8px; font-size: 11px; opacity: 0;
-            pointer-events: none; transition: 0.2s; white-space: nowrap; font-weight: 500; transform: translateY(10px);
-        }
-        .dock-item:hover .dock-tooltip { opacity: 1; transform: translateY(0); }
-
-        /* Windows */
+        /* WINDOWS */
         .window {
-            position: absolute; background: #0a0a0a; 
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 30px 60px -15px rgba(0, 0, 0, 0.8);
-            display: flex; flex-direction: column; overflow: hidden;
-            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            min-width: 300px; min-height: 200px;
+            position: absolute; display: flex; flex-direction: column;
+            border-radius: 16px; overflow: hidden;
+            min-width: 320px; min-height: 200px;
+            opacity: 0; transform: scale(0.95);
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1);
         }
-        .window.active-win { border-color: rgba(255,255,255,0.2); box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 40px 80px -20px rgba(0, 0, 0, 0.9); }
+        .window.open { opacity: 1; transform: scale(1); }
+        .window.active { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.2); }
 
-        .window-header {
-            height: 38px; background: #141414; border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 14px; cursor: default;
+        .win-header {
+            height: 44px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .window-title { font-size: 12px; font-weight: 500; color: #d4d4d8; pointer-events: none; }
-        
-        .window-content { flex: 1; background: #000; position: relative; }
-        .window-content iframe { width: 100%; height: 100%; border: none; background: #000; }
-        
-        /* Drag Overlay */
-        .drag-shield { position: absolute; inset: 0; display: none; z-index: 50; }
+        .win-content { flex: 1; background: #000; position: relative; }
+        .win-content iframe { width: 100%; height: 100%; border: none; }
+        .drag-shield { position: absolute; inset: 0; display: none; }
         .window.dragging .drag-shield { display: block; }
+        .win-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #a1a1aa; }
+        .win-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-close:hover { background: #ef4444; color: #fff; }
 
-        /* Controls */
-        .win-controls { display: flex; gap: 8px; }
-        .win-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; position: relative; }
-        .btn-close { background: #ff5f57; border: 1px solid #e0443e; }
-        .btn-min { background: #febc2e; border: 1px solid #d89e24; }
-        .btn-max { background: #28c840; border: 1px solid #1aab29; }
-        
-        .win-controls:hover .win-btn::after { 
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
-            font-size: 8px; font-weight: bold; color: rgba(0,0,0,0.6); opacity: 1;
+        /* QUICK SETTINGS */
+        #quick-settings {
+            position: fixed; bottom: 20px; right: 20px; width: 300px;
+            border-radius: 24px; padding: 20px; transform: translateY(120%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 110;
         }
-        .win-controls:hover .btn-close::after { content: '×'; }
-        .win-controls:hover .btn-min::after { content: '-'; }
-        .win-controls:hover .btn-max::after { content: '+'; }
-
+        #quick-settings.active { transform: translateY(0); }
+        .slider { -webkit-appearance: none; width: 100%; height: 6px; background: #333; border-radius: 3px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #fff; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="boot-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(255,255,255,0.2)]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" class="w-10 h-10"><path d="M12 2L2 22h20L12 2z"/></svg>
-        </div>
-        <div class="w-48 h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div id="load-bar" class="h-full bg-white w-0 transition-all duration-[1500ms] ease-out"></div>
+    <div id="boot" class="fixed inset-0 bg-black z-[999] flex flex-col items-center justify-center transition-opacity duration-1000">
+        <div class="w-16 h-16 bg-blue-500 rounded-2xl animate-spin mb-4 shadow-glow"></div>
+        <div class="text-xl font-medium tracking-tight">Vertex OS</div>
+    </div>
+
+    <div id="desktop" onclick="closeAllMenus()"></div>
+
+    <div class="fixed top-0 w-full h-10 flex justify-between items-center px-6 z-50 pointer-events-none">
+        <div class="text-xs font-semibold tracking-wide opacity-80">Vertex Creative</div>
+        <div class="pointer-events-auto cursor-pointer flex items-center gap-4 bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 hover:bg-black/60 transition" onclick="toggleSettings()">
+            <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+            <div class="w-px h-3 bg-white/20"></div>
+            <div id="clock" class="text-xs font-medium">12:00</div>
         </div>
     </div>
 
-    <div id="desktop">
+    <div id="windows" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+
+    <div id="start-menu" class="acrylic">
+        <div class="mb-4">
+            <input type="text" placeholder="Search apps..." class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500 transition">
+        </div>
+        <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pinned Apps</div>
         
-        <div class="absolute top-0 w-full h-8 bg-black/40 backdrop-blur-md flex items-center justify-between px-5 z-40 border-b border-white/5">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 font-bold text-xs text-white hover:text-zinc-300 transition cursor-pointer">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12 2L2 22h20L12 2z"/></svg>
-                    Vertex OS
-                </div>
+        <div class="app-grid">
+            <div class="grid-item" onclick="launch('passforge', 'PassForge', 'app/passforge.html', 400, 600)">
+                <div class="app-icon-lg bg-blue-600"><i data-lucide="shield-check" class="text-white"></i></div>
+                <span class="text-[11px]">PassForge</span>
             </div>
-            <div class="flex items-center gap-6 text-[11px] font-medium text-zinc-300">
-                <div id="clock">12:00 PM</div>
-                <div class="flex items-center gap-2"><i data-lucide="wifi" class="w-3 h-3"></i> Vertex_5G</div>
-                <div class="flex items-center gap-2"><i data-lucide="battery-charging" class="w-3 h-3"></i> 100%</div>
+            
+            <div class="grid-item" onclick="launch('qrx', 'QR-X', 'app/qrx.html', 500, 700)">
+                <div class="app-icon-lg bg-rose-600"><i data-lucide="qr-code" class="text-white"></i></div>
+                <span class="text-[11px]">QR-X</span>
+            </div>
+
+            <div class="grid-item" onclick="launch('lumix', 'Lumix Pro', 'app/lumixpro.html', 900, 650)">
+                <div class="app-icon-lg bg-purple-600"><i data-lucide="palette" class="text-white"></i></div>
+                <span class="text-[11px]">Lumix Pro</span>
+            </div>
+
+            <div class="grid-item" onclick="launch('typex', 'Type-X', 'app/typex.html', 800, 500)">
+                <div class="app-icon-lg bg-green-600"><i data-lucide="keyboard" class="text-white"></i></div>
+                <span class="text-[11px]">Type-X</span>
+            </div>
+
+            <div class="grid-item" onclick="launch('reflex', 'RefleX', 'app/reflex.html', 800, 600)">
+                <div class="app-icon-lg bg-yellow-500"><i data-lucide="crosshair" class="text-white"></i></div>
+                <span class="text-[11px]">RefleX</span>
+            </div>
+
+            <div class="grid-item" onclick="launch('gravitas', 'Gravitas', 'app/gravitas.html', 1000, 700)">
+                <div class="app-icon-lg bg-cyan-600"><i data-lucide="orbit" class="text-white"></i></div>
+                <span class="text-[11px]">Gravitas</span>
+            </div>
+
+            <div class="grid-item" onclick="launch('kinetix', 'Kinetix', 'app/kinetix.html', 1000, 700)">
+                <div class="app-icon-lg bg-indigo-600"><i data-lucide="film" class="text-white"></i></div>
+                <span class="text-[11px]">Kinetix</span>
+            </div>
+            
+             <div class="grid-item" onclick="launch('seqx', 'SeQ-X', 'app/seqx.html', 500, 600)">
+                <div class="app-icon-lg bg-pink-600"><i data-lucide="brain-circuit" class="text-white"></i></div>
+                <span class="text-[11px]">SeQ-X</span>
             </div>
         </div>
 
-        <div id="window-area" class="absolute inset-0 top-8 bottom-20 overflow-hidden"></div>
-
+        <div class="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500"></div>
+                <div class="text-xs font-medium">Vertex User</div>
+            </div>
+            <div class="p-2 hover:bg-white/10 rounded-lg cursor-pointer"><i data-lucide="power" class="w-4 h-4"></i></div>
+        </div>
     </div>
 
-    <div class="dock-container">
-        
-        <div class="dock-item" id="dock-passforge" onclick="handleApp('passforge', 'PassForge', 'apps/passforge.html', 400, 600)">
-            <i data-lucide="shield-check" class="text-blue-400 w-6 h-6"></i>
-            <span class="dock-tooltip">PassForge</span>
+    <div id="quick-settings" class="acrylic">
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white/10 hover:bg-white/20 p-3 rounded-xl cursor-pointer transition flex flex-col gap-2 active:scale-95">
+                <i data-lucide="wifi" class="text-blue-400"></i>
+                <span class="text-xs font-medium">Wi-Fi</span>
+            </div>
+            <div class="bg-white/10 hover:bg-white/20 p-3 rounded-xl cursor-pointer transition flex flex-col gap-2 active:scale-95">
+                <i data-lucide="bluetooth" class="text-white"></i>
+                <span class="text-xs font-medium">Bluetooth</span>
+            </div>
         </div>
+        <div class="bg-black/20 p-3 rounded-xl mb-3">
+            <div class="flex justify-between text-xs mb-2 text-gray-400"><i data-lucide="sun" class="w-4 h-4"></i> <span>80%</span></div>
+            <input type="range" class="slider">
+        </div>
+    </div>
 
-        <div class="dock-item" id="dock-qrx" onclick="handleApp('qrx', 'QR-X', 'apps/qrx.html', 500, 700)">
-            <i data-lucide="qr-code" class="text-rose-500 w-6 h-6"></i>
-            <span class="dock-tooltip">QR-X</span>
+    <div class="taskbar acrylic">
+        <div class="task-icon btn-start" onclick="toggleStart()">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-blue-400"><path d="M4 4h7v7H4zm0 9h7v7H4zm9-9h7v7h-7zm0 9h7v7h-7z"/></svg>
         </div>
-
-        <div class="dock-item" id="dock-lumix" onclick="handleApp('lumix', 'Lumix Pro', 'apps/lumix.html', 900, 650)">
-            <i data-lucide="palette" class="text-purple-400 w-6 h-6"></i>
-            <span class="dock-tooltip">Lumix</span>
-        </div>
-
-        <div class="dock-item" id="dock-typex" onclick="handleApp('typex', 'Type-X', 'apps/typex.html', 800, 500)">
-            <i data-lucide="keyboard" class="text-green-400 w-6 h-6"></i>
-            <span class="dock-tooltip">Type-X</span>
-        </div>
-
-        <div class="dock-item" id="dock-reflex" onclick="handleApp('reflex', 'RefleX', 'apps/reflex.html', 800, 600)">
-            <i data-lucide="crosshair" class="text-yellow-400 w-6 h-6"></i>
-            <span class="dock-tooltip">RefleX</span>
-        </div>
-
-        <div class="dock-item" id="dock-gravitas" onclick="handleApp('gravitas', 'Gravitas', 'apps/gravitas.html', 1000, 700)">
-            <i data-lucide="orbit" class="text-cyan-400 w-6 h-6"></i>
-            <span class="dock-tooltip">Gravitas</span>
-        </div>
-        
-        <div class="dock-item" id="dock-kinetix" onclick="handleApp('kinetix', 'Kinetix', 'apps/kinetix.html', 1000, 700)">
-            <i data-lucide="film" class="text-indigo-400 w-6 h-6"></i>
-            <span class="dock-tooltip">Kinetix</span>
-        </div>
-
         <div class="w-px h-8 bg-white/10 my-auto mx-1"></div>
-
-        <div class="dock-item" id="dock-admin" onclick="handleApp('admin', 'Admin', 'apps/admin.html', 1000, 700)">
-            <i data-lucide="lock" class="text-zinc-500 w-6 h-6"></i>
-            <span class="dock-tooltip">Admin</span>
-        </div>
-
+        <div id="task-apps" class="flex gap-2"></div>
     </div>
 
     <script>
-        // --- BOOT ---
         window.onload = () => {
             lucide.createIcons();
             startClock();
-            setTimeout(() => document.getElementById('load-bar').style.width = '100%', 100);
             setTimeout(() => {
-                const boot = document.getElementById('boot-screen');
-                boot.style.opacity = '0';
-                setTimeout(() => boot.remove(), 500);
-            }, 1800);
+                document.getElementById('boot').style.opacity = '0';
+                setTimeout(() => document.getElementById('boot').remove(), 1000);
+            }, 1500);
         };
 
         function startClock() {
             setInterval(() => {
-                document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }, 1000);
         }
 
-        // --- WINDOW ENGINE ---
-        let zIndex = 100;
-        let activeWindows = {}; // Store references to windows
+        function closeAllMenus() {
+            document.getElementById('start-menu').classList.remove('active');
+            document.getElementById('quick-settings').classList.remove('active');
+            document.getElementById('desktop').classList.remove('zoomed');
+        }
 
-        function handleApp(key, title, url, w, h) {
-            const dockIcon = document.getElementById(`dock-${key}`);
-            
-            // 1. Check if window already exists
-            if (activeWindows[key]) {
-                const win = activeWindows[key];
-                
-                if (win.style.display === 'none') {
-                    // It was minimized, restore it
-                    win.style.display = 'flex';
-                    // Small pop animation
-                    win.style.transform = 'scale(0.9)';
-                    setTimeout(() => win.style.transform = 'scale(1)', 50);
-                }
-                
-                bringToFront(win);
+        function toggleStart() {
+            const menu = document.getElementById('start-menu');
+            const desk = document.getElementById('desktop');
+            const isActive = menu.classList.contains('active');
+            closeAllMenus();
+            if(!isActive) {
+                menu.classList.add('active');
+                desk.classList.add('zoomed');
+            }
+        }
+
+        function toggleSettings() {
+            const set = document.getElementById('quick-settings');
+            const isActive = set.classList.contains('active');
+            closeAllMenus();
+            if(!isActive) set.classList.add('active');
+        }
+
+        let zIndex = 100;
+        let activeApps = {};
+
+        function launch(key, title, url, w, h) {
+            closeAllMenus();
+            if (activeApps[key]) {
+                const win = activeApps[key].window;
+                if (win.style.opacity === '0') restoreWindow(key);
+                focusWindow(win);
                 return;
             }
-
-            // 2. Create New Window
             createWindow(key, title, url, w, h);
-            dockIcon.classList.add('active'); // Add dot to dock
+            addToTaskbar(key, title);
         }
 
         function createWindow(key, title, url, w, h) {
             zIndex++;
             const win = document.createElement('div');
-            win.className = 'window active-win';
+            win.className = 'window acrylic pointer-events-auto';
             win.id = `win-${key}`;
             
-            // Center spawn
             const x = (window.innerWidth / 2) - (w / 2) + (Math.random() * 40 - 20);
             const y = (window.innerHeight / 2) - (h / 2) + (Math.random() * 40 - 20);
 
             win.style.width = w + 'px';
             win.style.height = h + 'px';
             win.style.left = Math.max(0, x) + 'px';
-            win.style.top = Math.max(30, y) + 'px';
+            win.style.top = Math.max(50, y) + 'px';
             win.style.zIndex = zIndex;
 
             win.innerHTML = `
-                <div class="window-header" onmousedown="startDrag(event, '${key}')">
-                    <div class="win-controls" onmousedown="event.stopPropagation()">
-                        <div class="win-btn btn-close" onclick="closeWindow('${key}')"></div>
-                        <div class="win-btn btn-min" onclick="minimizeWindow('${key}')"></div>
-                        <div class="win-btn btn-max" onclick="maximizeWindow('${key}')"></div>
+                <div class="win-header" onmousedown="startDrag(event, '${key}')">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-white/20"></div>
+                        <span class="text-xs font-medium text-gray-300">${title}</span>
                     </div>
-                    <div class="window-title">${title}</div>
-                    <div style="width:40px"></div>
+                    <div class="flex items-center gap-1" onmousedown="event.stopPropagation()">
+                        <div class="win-btn" onclick="minimizeWindow('${key}')"><i data-lucide="minus" class="w-3 h-3"></i></div>
+                        <div class="win-btn" onclick="maximizeWindow('${key}')"><i data-lucide="square" class="w-3 h-3"></i></div>
+                        <div class="win-btn btn-close" onclick="closeWindow('${key}')"><i data-lucide="x" class="w-3 h-3"></i></div>
+                    </div>
                 </div>
-                <div class="window-content">
+                <div class="win-content">
                     <div class="drag-shield"></div>
                     <iframe src="${url}"></iframe>
                 </div>
             `;
 
-            // Focus on click
-            win.addEventListener('mousedown', () => bringToFront(win));
+            win.addEventListener('mousedown', () => focusWindow(win));
+            document.getElementById('windows').appendChild(win);
+            setTimeout(() => win.classList.add('open'), 10);
+            activeApps[key] = { window: win };
+            lucide.createIcons();
+            focusWindow(win);
+        }
 
-            document.getElementById('window-area').appendChild(win);
-            activeWindows[key] = win;
+        function addToTaskbar(key, title) {
+            const bar = document.getElementById('task-apps');
+            const icon = document.createElement('div');
+            icon.className = 'task-icon open';
+            icon.id = `task-${key}`;
+            icon.onclick = () => launch(key);
+            icon.innerHTML = `<span class="text-xs font-bold">${title.substring(0,2).toUpperCase()}</span>`;
+            bar.appendChild(icon);
+        }
+
+        function focusWindow(win) {
+            zIndex++;
+            win.style.zIndex = zIndex;
+            document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+            win.classList.add('active');
         }
 
         function closeWindow(key) {
-            const win = activeWindows[key];
-            if (win) {
-                win.style.opacity = '0';
-                win.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    win.remove();
-                    delete activeWindows[key];
-                    document.getElementById(`dock-${key}`).classList.remove('active');
-                }, 200);
-            }
+            const win = activeApps[key].window;
+            win.classList.remove('open');
+            setTimeout(() => {
+                win.remove();
+                document.getElementById(`task-${key}`).remove();
+                delete activeApps[key];
+            }, 200);
         }
 
         function minimizeWindow(key) {
-            const win = activeWindows[key];
-            if (win) {
-                win.style.transform = 'scale(0.8) translateY(100px)';
-                win.style.opacity = '0';
-                setTimeout(() => {
-                    win.style.display = 'none';
-                    // Reset styles for next open
-                    win.style.transform = 'scale(1)';
-                    win.style.opacity = '1';
-                }, 200);
-            }
+            const win = activeApps[key].window;
+            win.classList.remove('open');
+            win.style.pointerEvents = 'none';
+        }
+
+        function restoreWindow(key) {
+            const win = activeApps[key].window;
+            win.classList.add('open');
+            win.style.pointerEvents = 'auto';
+            focusWindow(win);
         }
 
         function maximizeWindow(key) {
-            const win = activeWindows[key];
-            if(!win) return;
-            
-            if (win.getAttribute('data-max') === 'true') {
-                // Restore
-                win.style.width = win.dataset.prevW;
-                win.style.height = win.dataset.prevH;
-                win.style.left = win.dataset.prevX;
-                win.style.top = win.dataset.prevY;
-                win.setAttribute('data-max', 'false');
+            const win = activeApps[key].window;
+            if(win.dataset.max === 'true') {
+                win.style.width = win.dataset.w;
+                win.style.height = win.dataset.h;
+                win.style.left = win.dataset.x;
+                win.style.top = win.dataset.y;
+                win.style.borderRadius = '16px';
+                win.dataset.max = 'false';
             } else {
-                // Maximize
-                // Save current state
-                win.dataset.prevW = win.style.width;
-                win.dataset.prevH = win.style.height;
-                win.dataset.prevX = win.style.left;
-                win.dataset.prevY = win.style.top;
-                
+                win.dataset.w = win.style.width;
+                win.dataset.h = win.style.height;
+                win.dataset.x = win.style.left;
+                win.dataset.y = win.style.top;
                 win.style.width = '100%';
-                win.style.height = '100%';
+                win.style.height = 'calc(100% - 80px)';
                 win.style.left = '0';
                 win.style.top = '0';
-                win.setAttribute('data-max', 'true');
+                win.style.borderRadius = '0';
+                win.dataset.max = 'true';
             }
-            bringToFront(win);
         }
 
-        function bringToFront(win) {
-            zIndex++;
-            win.style.zIndex = zIndex;
-            
-            // Visual active state
-            document.querySelectorAll('.window').forEach(w => w.classList.remove('active-win'));
-            win.classList.add('active-win');
-        }
-
-        // --- DRAG LOGIC ---
-        let isDragging = false;
-        let dragTarget = null;
-        let offset = { x: 0, y: 0 };
-
+        let isDragging = false, dragWin = null, offset = {x:0, y:0};
         function startDrag(e, key) {
-            const win = activeWindows[key];
-            if (win.getAttribute('data-max') === 'true') return; // Can't drag maximized
-
+            const win = activeApps[key].window;
+            if(win.dataset.max === 'true') return;
             isDragging = true;
-            dragTarget = win;
-            bringToFront(win);
-
+            dragWin = win;
+            focusWindow(win);
+            win.classList.add('dragging');
             const rect = win.getBoundingClientRect();
-            // Account for the window area offset if needed, but here absolute matches screen mostly
             offset.x = e.clientX - rect.left;
             offset.y = e.clientY - rect.top;
-
-            win.classList.add('dragging');
-            document.body.style.userSelect = 'none';
-
-            document.addEventListener('mousemove', drag);
+            document.addEventListener('mousemove', onDrag);
             document.addEventListener('mouseup', stopDrag);
         }
-
-        function drag(e) {
-            if (!isDragging || !dragTarget) return;
-            
+        function onDrag(e) {
+            if(!isDragging) return;
             let x = e.clientX - offset.x;
             let y = e.clientY - offset.y;
-            
-            // Constraints
-            if (y < 0) y = 0; // Prevent going above top bar
-
-            dragTarget.style.left = x + 'px';
-            dragTarget.style.top = y + 'px';
+            if(y < 0) y = 0;
+            dragWin.style.left = x + 'px';
+            dragWin.style.top = y + 'px';
         }
-
         function stopDrag() {
             isDragging = false;
-            if (dragTarget) dragTarget.classList.remove('dragging');
-            dragTarget = null;
-            document.body.style.userSelect = '';
-            document.removeEventListener('mousemove', drag);
+            if(dragWin) dragWin.classList.remove('dragging');
+            dragWin = null;
+            document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
         }
-
     </script>
 </body>
 </html>
-
