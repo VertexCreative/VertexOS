@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REFLEX-X | Aim Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { hud: ['Teko', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { neon: '#facc15', dark: '#050505', hit: '#22c55e', miss: '#ef4444' },
+                    cursor: { crosshair: 'crosshair' },
+                    animation: { 'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
+
+        /* Tactical Grid Background */
+        .grid-bg {
+            position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(rgba(250, 204, 21, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(250, 204, 21, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none; z-index: 0;
+        }
+
+        /* The Game Area */
+        #game-layer {
+            position: absolute; inset: 0; z-index: 10; cursor: crosshair;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* The Target */
+        .target {
+            position: absolute; width: 60px; height: 60px;
+            border: 2px solid #facc15; border-radius: 50%;
+            background: rgba(250, 204, 21, 0.1);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.1s;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .target:active { transform: scale(0.9); background: #facc15; }
+        .target::after { content: ''; width: 6px; height: 6px; background: #facc15; border-radius: 50%; }
+
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* HUD Panels */
+        .hud-panel {
+            background: rgba(0,0,0,0.8); border: 1px solid #333;
+            backdrop-filter: blur(5px); padding: 10px 20px;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        /* Loading Bar */
+        .load-bar { height: 4px; background: #facc15; width: 0%; transition: width 2s linear; box-shadow: 0 0 10px #facc15; }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <div class="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20 pointer-events-none">
+        <div>
+            <h1 class="font-hud text-4xl text-neon tracking-wider uppercase drop-shadow-md">REFLEX-X</h1>
+            <p class="font-mono text-[10px] text-zinc-500 tracking-[0.3em]">TACTICAL AIM TRAINER</p>
+        </div>
+
+        <div class="flex gap-4">
+            <div class="hud-panel text-center">
+                <div class="text-[10px] text-zinc-500 font-mono uppercase">Remaining</div>
+                <div id="ui-left" class="text-2xl font-hud font-bold text-white">30</div>
+            </div>
+            <div class="hud-panel text-center">
+                <div class="text-[10px] text-zinc-500 font-mono uppercase">Time</div>
+                <div id="ui-time" class="text-2xl font-hud font-bold text-neon">0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="relative z-30 flex items-center justify-center h-full w-full pointer-events-none">
+
+        <div id="screen-start" class="pointer-events-auto text-center">
+            <div class="w-32 h-32 border border-zinc-700 rounded-full flex items-center justify-center mx-auto mb-6 relative group cursor-pointer hover:border-neon hover:shadow-[0_0_30px_rgba(250,204,21,0.2)] transition duration-500 bg-black/50 backdrop-blur" onclick="initSequence()">
+                <div class="absolute inset-0 rounded-full border-t-2 border-neon animate-spin opacity-0 group-hover:opacity-100 transition"></div>
+                <i data-lucide="crosshair" class="w-10 h-10 text-zinc-500 group-hover:text-neon transition"></i>
+            </div>
+            <h2 class="text-3xl font-hud font-bold tracking-widest mb-2">INITIATE SEQUENCE</h2>
+            <p class="text-zinc-500 font-mono text-xs">CLICK TO START // HIT 30 TARGETS</p>
+        </div>
+
+        <div id="screen-load" class="hidden pointer-events-auto text-center w-64">
+            <div class="bg-zinc-800 h-1 w-full mb-2 overflow-hidden">
+                <div id="loader-progress" class="load-bar"></div>
+            </div>
+            <div class="flex justify-between font-mono text-[10px] text-neon uppercase animate-pulse">
+                <span>Calibrating Sensors</span>
+                <span>...</span>
+            </div>
+        </div>
+
+        <div id="screen-result" class="hidden pointer-events-auto text-center bg-black/90 border border-zinc-800 p-10 rounded-2xl shadow-2xl backdrop-blur-xl">
+            <div class="text-zinc-500 text-xs font-mono uppercase mb-4 tracking-widest">Performance Report</div>
+
+            <div id="res-ms" class="text-7xl font-hud font-bold text-white mb-2 leading-none">000</div>
+            <div class="text-neon font-bold text-xl mb-6">MILLISECONDS AVG</div>
+
+            <div class="grid grid-cols-2 gap-4 mb-8 text-left">
+                <div class="bg-zinc-900 p-3 rounded border border-zinc-800">
+                    <div class="text-[10px] text-zinc-500 uppercase">Rank</div>
+                    <div id="res-rank" class="text-white font-bold font-mono">...</div>
+                </div>
+                <div class="bg-zinc-900 p-3 rounded border border-zinc-800">
+                    <div class="text-[10px] text-zinc-500 uppercase">Accuracy</div>
+                    <div class="text-white font-bold font-mono">100%</div>
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="w-full bg-neon hover:bg-yellow-300 text-black font-bold py-3 rounded text-sm tracking-widest transition">RESTART MISSION</button>
+        </div>
+
+    </div>
+
+    <div id="game-layer" class="hidden"></div>
+
+    <script>
+        window.onload = () => lucide.createIcons();
+
+        // CONFIG
+        const TOTAL_TARGETS = 30;
+        let targetsLeft = TOTAL_TARGETS;
+        let startTime = 0;
+        let timerInterval = null;
+        let gameActive = false;
+
+        // --- 1. SEQUENCE ---
+        async function initSequence() {
+            const start = document.getElementById('screen-start');
+            const load = document.getElementById('screen-load');
+            const progress = document.getElementById('loader-progress');
+
+            start.classList.add('hidden');
+            load.classList.remove('hidden');
+
+            // Trigger Animation
+            setTimeout(() => progress.style.width = '100%', 50);
+
+            // Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            load.classList.add('hidden');
+            progress.style.width = '0%'; // Reset for next time
+
+            startGame();
+        }
+
+        // --- 2. GAMEPLAY ---
+        function startGame() {
+            document.getElementById('game-layer').classList.remove('hidden');
+            document.getElementById('game-layer').style.pointerEvents = 'auto'; // Enable clicking
+
+            targetsLeft = TOTAL_TARGETS;
+            updateUI();
+
+            gameActive = true;
+            startTime = Date.now();
+
+            // Start Timer UI
+            timerInterval = setInterval(() => {
+                const delta = (Date.now() - startTime) / 1000;
+                document.getElementById('ui-time').innerText = delta.toFixed(2);
+            }, 10);
+
+            spawnTarget();
+        }
+
+        function spawnTarget() {
+            if(!gameActive) return;
+
+            const layer = document.getElementById('game-layer');
+            const target = document.createElement('div');
+            target.className = 'target';
+
+            // Random Position (Keep away from edges)
+            // 80% width/height to ensure it's clickable and not hidden by HUD
+            const x = (Math.random() * 80) - 40; // -40 to 40%
+            const y = (Math.random() * 60) - 30; // -30 to 30%
+
+            target.style.transform = `translate(${x}vw, ${y}vh)`;
+
+            target.onmousedown = (e) => {
+                e.stopPropagation(); // Prevent hitting background
+                hitTarget(target);
+            };
+
+            layer.appendChild(target);
+        }
+
+        function hitTarget(el) {
+            el.remove(); // Delete target
+            targetsLeft--;
+            updateUI();
+
+            if (targetsLeft <= 0) {
+                endGame();
+            } else {
+                spawnTarget();
+            }
+        }
+
+        // --- 3. ENDGAME ---
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            const endTime = Date.now();
+            const totalTimeMs = endTime - startTime;
+            const avgMs = Math.round(totalTimeMs / TOTAL_TARGETS); // Average per target
+
+            document.getElementById('game-layer').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            // Populate Stats
+            document.getElementById('res-ms').innerText = avgMs;
+
+            // Determine Rank
+            let rank = "HUMAN";
+            if(avgMs < 400) rank = "ELITE SOLDIER";
+            if(avgMs < 300) rank = "CYBORG";
+            if(avgMs < 250) rank = "MACHINE GOD"; // Very hard
+            if(avgMs > 600) rank = "ROOKIE";
+
+            document.getElementById('res-rank').innerText = rank;
+
+            // Color code the rank
+            const rankEl = document.getElementById('res-rank');
+            rankEl.className = avgMs < 300 ? "font-bold font-mono text-neon" : "font-bold font-mono text-white";
+        }
+
+        function resetGame() {
+            document.getElementById('screen-result').classList.add('hidden');
+            initSequence();
+        }
+
+        function updateUI() {
+            document.getElementById('ui-left').innerText = targetsLeft;
+        }
+
+    </script>
+</body>
+</html>
