@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMIX PRO | Chromatic Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Manrope', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { page: '#020202', card: '#111', border: '#222' },
+                    boxShadow: { 'glow': '0 0 40px -10px rgba(255,255,255,0.1)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020202; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* The Palette Container */
+        .palette-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+            width: 90%; max-width: 1200px; height: 60vh;
+        }
+
+        .swatch {
+            position: relative; border-radius: 24px; transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            cursor: pointer; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .swatch:hover { transform: translateY(-12px) scale(1.02); z-index: 10; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+
+        .hex-tag {
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+            padding: 8px 16px; border-radius: 12px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem; color: white; width: fit-content; margin-bottom: 4px;
+            opacity: 0.8; transition: 0.2s; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .swatch:hover .hex-tag { opacity: 1; background: rgba(0,0,0,0.8); border-color: rgba(255,255,255,0.3); }
+
+        .swatch-label { font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.5; text-transform: uppercase; font-weight: 800; }
+
+        /* Floating Dock */
+        .dock {
+            position: fixed; bottom: 40px; 
+            background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08); padding: 12px 24px; border-radius: 24px;
+            display: flex; align-items: center; gap: 20px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Loader Icon */
+        .loader-ring {
+            width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed; top: 40px; background: white; color: black; padding: 10px 24px;
+            border-radius: 99px; font-weight: 800; font-size: 0.8rem; transform: translateY(-100px);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;
+            box-shadow: 0 10px 30px rgba(255,255,255,0.2); pointer-events: none; z-index: 50;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">COPIED TO CLIPBOARD</div>
+
+    <div class="text-center mb-10 mt-10">
+        <div class="inline-flex items-center gap-2 mb-2 opacity-50">
+            <i data-lucide="palette" class="w-4 h-4"></i>
+            <span class="text-xs font-mono tracking-widest">LUMIX PRO v2.0</span>
+        </div>
+        <h1 class="text-4xl font-extrabold tracking-tight">Chromatic Engine</h1>
+    </div>
+
+    <div id="palette-stage" class="palette-grid">
+        <div class="swatch" id="c1" onclick="copyColor('c1')">
+            <div class="hex-tag" id="h1">#121212</div>
+            <span class="swatch-label">Primary</span>
+        </div>
+        <div class="swatch" id="c2" onclick="copyColor('c2')">
+            <div class="hex-tag" id="h2">#1E1E1E</div>
+            <span class="swatch-label">Secondary</span>
+        </div>
+        <div class="swatch" id="c3" onclick="copyColor('c3')">
+            <div class="hex-tag" id="h3">#3B82F6</div>
+            <span class="swatch-label">Accent 1</span>
+        </div>
+        <div class="swatch" id="c4" onclick="copyColor('c4')">
+            <div class="hex-tag" id="h4">#8B5CF6</div>
+            <span class="swatch-label">Accent 2</span>
+        </div>
+        <div class="swatch" id="c5" onclick="copyColor('c5')">
+            <div class="hex-tag" id="h5">#FFFFFF</div>
+            <span class="swatch-label">Contrast</span>
+        </div>
+    </div>
+
+    <div class="dock">
+        <div class="relative group">
+            <select id="mode-sel" class="appearance-none bg-transparent text-sm font-bold text-zinc-400 hover:text-white outline-none pr-6 cursor-pointer text-right">
+                <option value="cyber">Cyberpunk</option>
+                <option value="modern">Modern UI</option>
+                <option value="pastel">Soft Pastel</option>
+                <option value="random">Randomized</option>
+            </select>
+            <i data-lucide="chevron-up" class="w-3 h-3 absolute right-0 top-1.5 text-zinc-500 pointer-events-none"></i>
+        </div>
+
+        <div class="h-6 w-px bg-white/10 mx-2"></div>
+
+        <button id="btn-gen" onclick="startSequence()" class="bg-white hover:bg-zinc-200 text-black px-8 py-3 rounded-xl font-extrabold text-sm tracking-wide transition transform active:scale-95 flex items-center gap-3">
+            <div id="loader" class="loader-ring hidden"></div>
+            <i id="icon-gen" data-lucide="shuffle" class="w-4 h-4"></i>
+            <span id="text-gen">GENERATE</span>
+        </button>
+
+        <div class="h-6 w-px bg-white/10 mx-2"></div>
+
+        <button onclick="saveImage()" class="p-2 text-zinc-400 hover:text-white transition rounded-lg hover:bg-white/10" title="Download PNG">
+            <i data-lucide="download" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <script>
+        window.onload = () => {
+            lucide.createIcons();
+            generateColors(false, 'modern'); // Start with a nice modern palette
+        };
+
+        let isAnimating = false;
+
+        // 1. SEQUENCE LOGIC
+        async function startSequence() {
+            if(isAnimating) return;
+            isAnimating = true;
+
+            const btn = document.getElementById('btn-gen');
+            const icon = document.getElementById('icon-gen');
+            const text = document.getElementById('text-gen');
+            const loader = document.getElementById('loader');
+            const mode = document.getElementById('mode-sel').value;
+
+            // Loading UI
+            btn.classList.add('pl-6', 'pr-6'); // Adjust padding for loader
+            icon.classList.add('hidden');
+            loader.classList.remove('hidden');
+            text.innerText = "MIXING...";
+
+            // Rapid Shuffle Effect
+            const interval = setInterval(() => {
+                generateColors(true); // Chaos mode
+            }, 80);
+
+            // Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            // Finalize
+            clearInterval(interval);
+            generateColors(false, mode); // Logic mode
+
+            // Reset UI
+            loader.classList.add('hidden');
+            icon.classList.remove('hidden');
+            text.innerText = "GENERATE";
+            isAnimating = false;
+        }
+
+        // 2. GENERATION LOGIC
+        function generateColors(isChaos, mode = 'modern') {
+            let colors = [];
+
+            if(isChaos) {
+                for(let i=0; i<5; i++) colors.push(getRandomHex());
+            } else {
+                if(mode === 'cyber') {
+                    colors = ['#050505', '#111111', getRandomNeon(), getRandomNeon(), '#ffffff'];
+                } else if (mode === 'modern') {
+                    // Modern usually implies a strong primary, a lighter version, a grey, and a white
+                    const base = getRandomHex();
+                    colors = [shadeColor(base, -40), base, shadeColor(base, 20), '#f3f4f6', '#ffffff'];
+                } else if (mode === 'pastel') {
+                    for(let i=0; i<5; i++) colors.push(getRandomPastel());
+                } else {
+                    for(let i=0; i<5; i++) colors.push(getRandomHex());
+                }
+            }
+
+            // Apply Colors
+            for(let i=0; i<5; i++) {
+                const swatch = document.getElementById(`c${i+1}`);
+                const tag = document.getElementById(`h${i+1}`);
+
+                swatch.style.backgroundColor = colors[i];
+                tag.innerText = colors[i];
+            }
+        }
+
+        // 3. UTILS
+        function getRandomHex() {
+            return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+
+        function getRandomNeon() {
+            const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#eab308'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function getRandomPastel() {
+            const h = Math.floor(Math.random() * 360);
+            return `hsl(${h}, 70%, 85%)`; // We'll stick to HSL for pastels, browser handles it fine
+        }
+
+        // Simple function to darken/lighten hex
+        function shadeColor(color, percent) {
+            let R = parseInt(color.substring(1,3),16);
+            let G = parseInt(color.substring(3,5),16);
+            let B = parseInt(color.substring(5,7),16);
+
+            R = parseInt(R * (100 + percent) / 100);
+            G = parseInt(G * (100 + percent) / 100);
+            B = parseInt(B * (100 + percent) / 100);
+
+            R = (R<255)?R:255;  
+            G = (G<255)?G:255;  
+            B = (B<255)?B:255;  
+
+            let RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+            let GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+            let BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+
+            return "#"+RR+GG+BB;
+        }
+
+        function copyColor(id) {
+            const hex = document.getElementById(id).children[0].innerText;
+            navigator.clipboard.writeText(hex);
+
+            const toast = document.getElementById('toast');
+            toast.innerText = `COPIED ${hex}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function saveImage() {
+            const stage = document.getElementById('palette-stage');
+            html2canvas(stage, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'LUMIX_Palette.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
