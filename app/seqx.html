@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEQ-X | Memory Engine</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { head: ['Orbitron', 'sans-serif'], mono: ['Share Tech Mono', 'monospace'] },
+                    colors: { cyan: '#06b6d4', dark: '#020617', active: '#22d3ee' },
+                    boxShadow: { 'neon': '0 0 20px rgba(6, 182, 212, 0.5)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: #fff; height: 100vh; overflow: hidden; user-select: none; display: flex; align-items: center; justify-content: center; }
+
+        /* Background Grid */
+        .bg-grid {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0.1;
+            background-image: radial-gradient(#06b6d4 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* The Grid Pad */
+        .pad-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            padding: 20px; background: #0f172a; border-radius: 24px;
+            border: 1px solid #1e293b; box-shadow: 0 20px 50px -10px rgba(0,0,0,0.8);
+            position: relative; z-index: 10;
+        }
+
+        /* Buttons */
+        .pad-btn {
+            width: 80px; height: 80px; background: #1e293b; border-radius: 12px;
+            border: 2px solid #334155; cursor: pointer; transition: 0.1s;
+            position: relative; overflow: hidden;
+        }
+        .pad-btn:active { transform: scale(0.95); }
+
+        /* Activation State (Flash) */
+        .pad-btn.flash {
+            background: #22d3ee; border-color: #fff;
+            box-shadow: 0 0 30px #22d3ee;
+            z-index: 20;
+        }
+
+        /* Loader */
+        .loader-ring {
+            width: 40px; height: 40px; border: 4px solid #1e293b;
+            border-top-color: #06b6d4; border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 16px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <div class="relative w-full max-w-md text-center">
+
+        <div class="mb-8">
+            <h1 class="font-head text-5xl font-black text-cyan tracking-tighter drop-shadow-lg mb-2">SEQ-X</h1>
+            <div class="flex items-center justify-center gap-4 text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                <span>Neural Training</span>
+                <span class="w-1 h-1 bg-zinc-600 rounded-full"></span>
+                <span id="score-display">Level 0</span>
+            </div>
+        </div>
+
+        <div id="view-start" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm rounded-3xl border border-white/10 p-6">
+            <div class="w-20 h-20 bg-cyan/10 rounded-full flex items-center justify-center mb-6 border border-cyan/20 animate-pulse">
+                <i data-lucide="brain-circuit" class="w-10 h-10 text-cyan"></i>
+            </div>
+            <h2 class="text-2xl font-bold font-head mb-2">MEMORY LINK</h2>
+            <p class="text-zinc-400 text-sm mb-8 font-mono max-w-[200px]">Repeat the pattern. The sequence grows every turn.</p>
+            <button onclick="bootSequence()" class="bg-cyan hover:bg-cyan-400 text-black font-bold font-mono py-3 px-8 rounded-full transition hover:scale-105 shadow-neon">
+                ESTABLISH LINK
+            </button>
+        </div>
+
+        <div id="view-load" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-black rounded-3xl border border-zinc-800">
+            <div class="loader-ring"></div>
+            <div class="font-mono text-xs text-cyan animate-pulse">MAPPING NEURAL PATHWAYS...</div>
+        </div>
+
+        <div id="view-over" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-950/90 backdrop-blur-md rounded-3xl border border-red-500/30">
+            <div class="text-red-500 font-head text-4xl font-black mb-2">LINK LOST</div>
+            <div class="text-white font-mono text-sm mb-6">FINAL LEVEL: <span id="final-score" class="text-xl font-bold">0</span></div>
+
+            <div id="rank-badge" class="px-4 py-1 rounded bg-black/40 border border-white/10 text-xs font-mono mb-8 text-zinc-300">
+                RANK: UNKNOWN
+            </div>
+
+            <button onclick="resetGame()" class="border border-white/20 hover:bg-white hover:text-red-900 text-white font-bold font-mono py-3 px-8 rounded-full transition">
+                RETRY CONNECTION
+            </button>
+        </div>
+
+        <div class="pad-grid">
+            <div id="p0" class="pad-btn" onclick="handleInput(0)"></div>
+            <div id="p1" class="pad-btn" onclick="handleInput(1)"></div>
+            <div id="p2" class="pad-btn" onclick="handleInput(2)"></div>
+            <div id="p3" class="pad-btn" onclick="handleInput(3)"></div>
+            <div id="p4" class="pad-btn" onclick="handleInput(4)"></div>
+            <div id="p5" class="pad-btn" onclick="handleInput(5)"></div>
+            <div id="p6" class="pad-btn" onclick="handleInput(6)"></div>
+            <div id="p7" class="pad-btn" onclick="handleInput(7)"></div>
+            <div id="p8" class="pad-btn" onclick="handleInput(8)"></div>
+
+            <div id="turn-ind" class="absolute -bottom-10 left-0 right-0 text-center font-mono text-xs text-cyan opacity-0 transition">
+                YOUR TURN
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.onload = () => lucide.createIcons();
+
+        // STATE
+        let sequence = [];
+        let playerSeq = [];
+        let level = 0;
+        let isPlayerTurn = false;
+
+        // --- 1. BOOT ---
+        async function bootSequence() {
+            document.getElementById('view-start').classList.add('hidden');
+            document.getElementById('view-over').classList.add('hidden');
+            document.getElementById('view-load').classList.remove('hidden');
+
+            // Wait 2 Seconds
+            await new Promise(r => setTimeout(r, 2000));
+
+            document.getElementById('view-load').classList.add('hidden');
+            startGame();
+        }
+
+        // --- 2. GAME LOGIC ---
+        function startGame() {
+            sequence = [];
+            level = 0;
+            updateScore();
+            nextRound();
+        }
+
+        async function nextRound() {
+            level++;
+            updateScore();
+            playerSeq = [];
+            isPlayerTurn = false;
+            document.getElementById('turn-ind').style.opacity = '0';
+
+            // Add random step (0-8)
+            sequence.push(Math.floor(Math.random() * 9));
+
+            // Play sequence
+            await new Promise(r => setTimeout(r, 500)); // Small pause
+            for (let id of sequence) {
+                await flashPad(id);
+            }
+
+            isPlayerTurn = true;
+            document.getElementById('turn-ind').style.opacity = '1';
+        }
+
+        async function handleInput(id) {
+            if(!isPlayerTurn) return;
+
+            // Flash the clicked pad immediately
+            const pad = document.getElementById(`p${id}`);
+            pad.classList.add('flash');
+            setTimeout(() => pad.classList.remove('flash'), 150);
+
+            // Check correctness
+            const currentStep = playerSeq.length;
+            if (id !== sequence[currentStep]) {
+                gameOver();
+                return;
+            }
+
+            playerSeq.push(id);
+
+            // Check if round complete
+            if (playerSeq.length === sequence.length) {
+                isPlayerTurn = false;
+                document.getElementById('turn-ind').style.opacity = '0';
+                setTimeout(nextRound, 800);
+            }
+        }
+
+        async function flashPad(id) {
+            const pad = document.getElementById(`p${id}`);
+            pad.classList.add('flash');
+            // Play Sound logic could go here
+            await new Promise(r => setTimeout(r, 300)); // Flash duration
+            pad.classList.remove('flash');
+            await new Promise(r => setTimeout(r, 150)); // Gap between flashes
+        }
+
+        function gameOver() {
+            isPlayerTurn = false;
+            document.getElementById('final-score').innerText = level;
+            document.getElementById('view-over').classList.remove('hidden');
+
+            // Rank Logic
+            const rankEl = document.getElementById('rank-badge');
+            let rank = "GOLDFISH"; // Default
+            if (level >= 5) rank = "HUMAN";
+            if (level >= 10) rank = "CYBERNETIC";
+            if (level >= 15) rank = "AI CORE"; // God tier
+
+            rankEl.innerText = `RANK: ${rank}`;
+        }
+
+        function resetGame() {
+            bootSequence();
+        }
+
+        function updateScore() {
+            document.getElementById('score-display').innerText = `LEVEL ${level}`;
+        }
+
+    </script>
+</body>
+</html>
