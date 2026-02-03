@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA | Studio Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #050505; color: #fff; height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif; user-select: none; }
+        
+        /* CANVAS LAYER */
+        #visualizer {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0.8; mask-image: linear-gradient(to top, black 40%, transparent 100%);
+        }
+
+        /* GLASS UI */
+        .glass-panel {
+            background: rgba(18, 18, 18, 0.65);
+            backdrop-filter: blur(30px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+
+        /* ALBUM ART SHADOW */
+        .album-glow {
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.2);
+            animation: pulse-glow 3s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.1); }
+            100% { box-shadow: 0 0 60px rgba(59, 130, 246, 0.4); }
+        }
+
+        /* CONTROLS */
+        .btn-control {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent; color: #a1a1aa; cursor: pointer; transition: 0.2s;
+        }
+        .btn-control:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateY(-2px); }
+        .btn-control:active { transform: scale(0.95); }
+        
+        .btn-play {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: #fff; color: #000;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .btn-play:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,255,255,0.4); }
+        .btn-play:active { transform: scale(0.95); }
+
+        /* SLIDERS */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%;
+            background: #fff; margin-top: -4px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: 0.1s; opacity: 0;
+        }
+        .group:hover input[type=range]::-webkit-slider-thumb { opacity: 1; }
+
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center">
+
+    <canvas id="visualizer"></canvas>
+
+    <div class="glass-panel w-[90%] max-w-[400px] p-6 rounded-3xl z-10 flex flex-col items-center text-center relative overflow-hidden">
+        
+        <div class="w-full flex justify-between items-center mb-8 px-2">
+            <div class="text-[10px] font-bold text-gray-500 tracking-widest">AURA ENGINE</div>
+            <label class="cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4 text-gray-400 hover:text-white transition"></i>
+                <input type="file" id="file-input" accept="audio/*" class="hidden">
+            </label>
+        </div>
+
+        <div class="w-48 h-48 bg-gradient-to-tr from-cyan-900 to-blue-900 rounded-2xl mb-6 flex items-center justify-center album-glow relative group overflow-hidden">
+            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition duration-500"></div>
+            <i data-lucide="music" class="w-16 h-16 text-white/80"></i>
+        </div>
+
+        <div class="mb-8 w-full px-4">
+            <h2 id="track-name" class="text-lg font-semibold text-white truncate mb-1">Select Track</h2>
+            <p id="track-artist" class="text-xs text-gray-400 font-medium">Vertex Audio System</p>
+        </div>
+
+        <div class="w-full mb-8 group">
+            <input type="range" id="progress-bar" value="0" step="0.1" oninput="seekAudio()">
+            <div class="flex justify-between mt-2 text-[10px] font-mono text-gray-500">
+                <span id="curr-time">0:00</span>
+                <span id="dur-time">--:--</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6 mb-4">
+            <div class="btn-control" onclick="skip(-10)"><i data-lucide="skip-back" class="w-5 h-5 fill-current"></i></div>
+            
+            <div class="btn-play" id="play-btn" onclick="togglePlay()">
+                <i data-lucide="play" class="w-6 h-6 fill-black ml-1"></i>
+            </div>
+            
+            <div class="btn-control" onclick="skip(10)"><i data-lucide="skip-forward" class="w-5 h-5 fill-current"></i></div>
+        </div>
+
+        <div class="flex items-center gap-3 w-1/2 mt-4 opacity-50 hover:opacity-100 transition duration-300">
+            <i data-lucide="volume-2" class="w-3 h-3 text-gray-300"></i>
+            <input type="range" id="vol-bar" value="1" max="1" step="0.01" oninput="setVolume()">
+        </div>
+
+    </div>
+
+    <audio id="audio" crossorigin="anonymous"></audio>
+
+    <script>
+        lucide.createIcons();
+
+        // --- CORE VARIABLES ---
+        const audio = document.getElementById('audio');
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('file-input');
+        const playBtn = document.getElementById('play-btn');
+        const progressBar = document.getElementById('progress-bar');
+        
+        let audioCtx, analyser, source;
+        let isPlaying = false;
+        let animationId;
+
+        // --- RESIZE LOGIC ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- FILE HANDLING ---
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audio.src = url;
+                document.getElementById('track-name').innerText = file.name.replace(/\.[^/.]+$/, "");
+                document.getElementById('track-artist').innerText = "Local File";
+                initAudio();
+                playAudio();
+            }
+        });
+
+        // --- AUDIO ENGINE INIT ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                
+                // HIGH RES FFT FOR PRO LOOK
+                analyser.fftSize = 2048; 
+                // SMOOTHING FOR LIQUID FEEL
+                analyser.smoothingTimeConstant = 0.85; 
+
+                source = audioCtx.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+            }
+        }
+
+        // --- PLAYBACK CONTROLS ---
+        function togglePlay() {
+            if (!audio.src) return document.getElementById('file-input').click();
+            if (!audioCtx) initAudio();
+
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                playBtn.innerHTML = `<i data-lucide="play" class="w-6 h-6 fill-black ml-1"></i>`;
+            } else {
+                audio.play();
+                isPlaying = true;
+                playBtn.innerHTML = `<i data-lucide="pause" class="w-6 h-6 fill-black"></i>`;
+                renderFrame();
+            }
+            lucide.createIcons();
+        }
+
+        function playAudio() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            audio.play();
+            isPlaying = true;
+            playBtn.innerHTML = `<i data-lucide="pause" class="w-6 h-6 fill-black"></i>`;
+            lucide.createIcons();
+            renderFrame();
+        }
+
+        function skip(sec) {
+            audio.currentTime += sec;
+        }
+
+        function setVolume() {
+            audio.volume = document.getElementById('vol-bar').value;
+        }
+
+        function seekAudio() {
+            const seekTo = audio.duration * (progressBar.value / 100);
+            audio.currentTime = seekTo;
+        }
+
+        // --- PRO VISUALIZER RENDERER ---
+        function renderFrame() {
+            if (!isPlaying) return;
+            animationId = requestAnimationFrame(renderFrame);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // SYMMETRIC BARS CONFIG
+            const barCount = 120; // Number of bars to draw
+            const barWidth = (canvas.width / barCount) / 2;
+            const centerX = canvas.width / 2;
+            
+            // GRADIENT ENGINE
+            const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height / 2);
+            gradient.addColorStop(0, '#3b82f6'); // Blue
+            gradient.addColorStop(0.5, '#8b5cf6'); // Purple
+            gradient.addColorStop(1, '#06b6d4'); // Cyan
+
+            ctx.fillStyle = gradient;
+
+            for (let i = 0; i < barCount; i++) {
+                // Focus on lower/mid frequencies for better visuals
+                const index = Math.floor(i * (bufferLength / barCount) * 0.4); 
+                let barHeight = (dataArray[index] / 255) * (canvas.height * 0.6);
+                
+                // Enhance high frequencies slightly
+                barHeight = Math.max(4, barHeight); 
+
+                // Right Side
+                ctx.fillRect(centerX + (i * barWidth), canvas.height - barHeight, barWidth - 2, barHeight);
+                // Left Side (Mirror)
+                ctx.fillRect(centerX - ((i + 1) * barWidth), canvas.height - barHeight, barWidth - 2, barHeight);
+            }
+
+            // UPDATE PROGRESS UI
+            if(audio.duration) {
+                const pct = (audio.currentTime / audio.duration) * 100;
+                progressBar.value = pct;
+                document.getElementById('curr-time').innerText = formatTime(audio.currentTime);
+                document.getElementById('dur-time').innerText = formatTime(audio.duration);
+            }
+        }
+
+        function formatTime(s) {
+            const min = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${min}:${sec < 10 ? '0'+sec : sec}`;
+        }
+    </script>
+</body>
+</html>
