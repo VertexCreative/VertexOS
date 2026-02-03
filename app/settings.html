@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #09090b; color: #fff; font-family: 'Inter', sans-serif; user-select: none; }
+        
+        /* SIDEBAR */
+        .sidebar-item {
+            padding: 10px 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; font-size: 13px; color: #a1a1aa; transition: 0.2s;
+        }
+        .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-item.active { background: #2563eb; color: #fff; }
+
+        /* INPUTS */
+        .input-box {
+            width: 100%; background: #18181b; border: 1px solid #27272a; color: white;
+            padding: 8px 12px; border-radius: 6px; font-size: 13px; outline: none; transition: 0.2s;
+        }
+        .input-box:focus { border-color: #3b82f6; }
+
+        .btn-action {
+            padding: 8px 16px; background: #fff; color: black; font-size: 12px; font-weight: 600;
+            border-radius: 6px; cursor: pointer; transition: 0.2s; border: none;
+        }
+        .btn-action:hover { background: #e4e4e7; }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div class="w-48 bg-[#09090b] border-r border-white/5 p-4 flex flex-col">
+        <div class="text-xs font-bold text-gray-500 mb-4 px-2 tracking-widest">SYSTEM</div>
+        <div class="sidebar-item active" onclick="showTab('tab-general', this)"><i data-lucide="user"></i> General</div>
+        <div class="sidebar-item" onclick="showTab('tab-display', this)"><i data-lucide="monitor"></i> Display</div>
+        <div class="sidebar-item" onclick="showTab('tab-info', this)"><i data-lucide="cpu"></i> About</div>
+    </div>
+
+    <div class="flex-1 bg-[#0c0c0e] p-8 overflow-y-auto">
+        
+        <div id="tab-general" class="tab-content">
+            <h1 class="text-xl font-semibold mb-6">General Settings</h1>
+            
+            <div class="mb-6">
+                <label class="text-xs text-gray-400 mb-2 block">Username</label>
+                <div class="flex gap-2">
+                    <input type="text" id="input-name" class="input-box" placeholder="Enter your name">
+                    <button class="btn-action" onclick="saveName()">Save</button>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2">This name will appear on the Start Menu and Lock Screen.</p>
+            </div>
+
+            <div class="h-px bg-white/5 my-6"></div>
+
+            <div class="mb-6">
+                <label class="text-xs text-gray-400 mb-2 block">Factory Reset</label>
+                <button class="btn-action btn-danger w-full text-left" onclick="resetSystem()">Reset All Settings</button>
+            </div>
+        </div>
+
+        <div id="tab-display" class="tab-content hidden">
+            <h1 class="text-xl font-semibold mb-6">Display & Personalization</h1>
+            
+            <div class="mb-6">
+                <label class="text-xs text-gray-400 mb-2 block">Wallpaper URL</label>
+                <div class="flex gap-2">
+                    <input type="text" id="input-wall" class="input-box" placeholder="https://...">
+                    <button class="btn-action" onclick="saveWallpaper()">Apply</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="aspect-video bg-zinc-800 rounded-lg cursor-pointer hover:ring-2 ring-blue-500 overflow-hidden" onclick="setPreset('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574')">
+                    <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=400" class="w-full h-full object-cover">
+                </div>
+                <div class="aspect-video bg-zinc-800 rounded-lg cursor-pointer hover:ring-2 ring-blue-500 overflow-hidden" onclick="setPreset('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670')">
+                    <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-info" class="tab-content hidden">
+            <h1 class="text-xl font-semibold mb-6">System Information</h1>
+            
+            <div class="bg-white/5 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Vertex OS Version</span>
+                    <span>5.2 Enterprise</span>
+                </div>
+                <div class="h-px bg-white/5"></div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Resolution</span>
+                    <span id="sys-res">1920x1080</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Battery</span>
+                    <span id="sys-bat">Scanning...</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Network</span>
+                    <span id="sys-net">Online</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- TABS ---
+        function showTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // --- REAL SYSTEM INFO ---
+        document.getElementById('sys-res').innerText = `${window.screen.width}x${window.screen.height}`;
+        document.getElementById('sys-net').innerText = navigator.onLine ? "Online" : "Offline";
+
+        if(navigator.getBattery) {
+            navigator.getBattery().then(bat => {
+                const level = Math.round(bat.level * 100);
+                document.getElementById('sys-bat').innerText = `${level}% ${bat.charging ? '(Charging)' : ''}`;
+            });
+        } else {
+            document.getElementById('sys-bat').innerText = "Desktop Power";
+        }
+
+        // --- LOGIC: SAVE SETTINGS ---
+        // We use localStorage because it persists across reloads
+        // We also allow the Parent Window (OS) to read it
+
+        function saveName() {
+            const name = document.getElementById('input-name').value;
+            if(name) {
+                localStorage.setItem('vertex_user', name);
+                notifyOS('user_updated');
+            }
+        }
+
+        function saveWallpaper() {
+            const url = document.getElementById('input-wall').value;
+            if(url) {
+                localStorage.setItem('vertex_wall', url);
+                notifyOS('wall_updated');
+            }
+        }
+
+        function setPreset(url) {
+            localStorage.setItem('vertex_wall', url);
+            notifyOS('wall_updated');
+        }
+
+        function resetSystem() {
+            localStorage.clear();
+            notifyOS('reset');
+        }
+
+        // --- IPC (Inter-Process Communication) ---
+        // Since we are inside an iframe, we need to tell the Parent (index.html) to update
+        function notifyOS(action) {
+            window.parent.postMessage(action, '*');
+            
+            // Visual Feedback
+            const btn = document.activeElement;
+            const originalText = btn.innerText;
+            btn.innerText = "Saved!";
+            btn.style.background = "#22c55e";
+            btn.style.color = "white";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "";
+                btn.style.color = "";
+            }, 1000);
+        }
+
+        // Load current Settings on open
+        window.onload = () => {
+            const savedName = localStorage.getItem('vertex_user');
+            if(savedName) document.getElementById('input-name').value = savedName;
+        };
+
+    </script>
+</body>
+</html>
