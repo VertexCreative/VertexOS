@@ -40,7 +40,7 @@
             position: absolute; inset: 0;
             background: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574&auto=format&fit=crop') no-repeat center center;
             background-size: cover; z-index: 0;
-            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.6s;
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.6s, background-image 0.5s ease-in-out;
         }
         #desktop.blurred { transform: scale(1.05); filter: blur(18px) brightness(0.8); }
 
@@ -84,13 +84,13 @@
         /* START MENU */
         #start-menu {
             position: fixed; bottom: -120%; left: 50%; transform: translateX(-50%);
-            width: 580px; height: 650px; border-radius: 18px;
+            width: 620px; height: 680px; border-radius: 18px;
             display: flex; flex-direction: column; padding: 24px;
             transition: bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1); z-index: 90;
         }
         #start-menu.active { bottom: 90px; }
 
-        .app-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; margin-top: 24px; }
+        .app-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 24px; }
         .app-item {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             cursor: pointer; padding: 10px; border-radius: 12px; transition: 0.2s;
@@ -165,10 +165,10 @@
     <div id="context-menu" class="mica">
         <div class="ctx-item" onclick="refreshDesktop()"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh System</div>
         <div class="h-px bg-white/10 my-1 mx-2"></div>
-        <div class="ctx-item" onclick="toggleSettings()"><i data-lucide="settings" class="w-4 h-4"></i> System Preferences</div>
+        <div class="ctx-item" onclick="launch('settings', 'System Control', 'app/settings.html', 700, 500)"><i data-lucide="settings" class="w-4 h-4"></i> System Preferences</div>
         <div class="ctx-item" onclick="openFullscreen()"><i data-lucide="monitor" class="w-4 h-4"></i> Enter Fullscreen</div>
         <div class="h-px bg-white/10 my-1 mx-2"></div>
-        <div class="ctx-item" onclick="showToast('Version 5.2 Enterprise')"><i data-lucide="info" class="w-4 h-4"></i> About Vertex OS</div>
+        <div class="ctx-item" onclick="showToast('Version 5.3 Enterprise')"><i data-lucide="info" class="w-4 h-4"></i> About Vertex OS</div>
     </div>
 
     <div id="desktop" onclick="handleDesktopClick(event)"></div>
@@ -200,6 +200,16 @@
         </div>
         
         <div class="app-grid" id="app-grid-container">
+            <div class="app-item" data-name="settings" onclick="launch('settings', 'System Control', 'app/settings.html', 700, 500)">
+                <div class="app-icon-lg bg-gray-600"><i data-lucide="settings-2"></i></div>
+                <span class="text-[11px] font-medium text-gray-300">Settings</span>
+            </div>
+
+            <div class="app-item" data-name="aura" onclick="launch('aura', 'AURA Engine', 'app/aura.html', 800, 600)">
+                <div class="app-icon-lg bg-gradient-to-tr from-cyan-500 to-blue-600"><i data-lucide="waves"></i></div>
+                <span class="text-[11px] font-medium text-gray-300">AURA</span>
+            </div>
+
             <div class="app-item" data-name="passforge" onclick="launch('passforge', 'PassForge', 'app/passforge.html', 400, 600)">
                 <div class="app-icon-lg bg-blue-600"><i data-lucide="shield-check"></i></div>
                 <span class="text-[11px] font-medium text-gray-300">PassForge</span>
@@ -242,7 +252,7 @@
         </div>
 
         <div class="mt-auto pt-5 border-t border-white/10 flex items-center justify-between px-2">
-            <div class="flex items-center gap-3 hover:bg-white/5 p-2 rounded-xl cursor-pointer transition w-full">
+            <div class="flex items-center gap-3 hover:bg-white/5 p-2 rounded-xl cursor-pointer transition w-full" onclick="launch('settings', 'System Control', 'app/settings.html', 700, 500)">
                 <div id="user-avatar" class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center"></div>
                 <div>
                     <div id="user-name" class="text-xs font-semibold text-white">Guest User</div>
@@ -293,15 +303,17 @@
     </div>
 
     <script>
-        // --- ⚙️ ENTERPRISE CONFIGURATION ---
-        const CONFIG = {
+        // --- ⚙️ SYSTEM CONFIGURATION ---
+        const DEFAULT_CONFIG = {
             logo: "https://cdn.discordapp.com/icons/1467910208796758231/fcfe701db117f2cef9e9b8350a1fc8d8.webp?size=1024",
-            currentUser: "Guest User"
+            user: "Guest User",
+            wall: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574&auto=format&fit=crop"
         };
 
         // --- SYSTEM INIT ---
         window.onload = () => {
             lucide.createIcons();
+            loadSettings(); 
             initBranding();
             startClock();
             
@@ -312,11 +324,18 @@
                 boot.style.opacity = '0';
                 setTimeout(() => {
                     boot.remove();
-                    showToast('System Online: Visitor Access', 'shield-check');
+                    const user = localStorage.getItem('vertex_user') || DEFAULT_CONFIG.user;
+                    showToast(`System Online: ${user}`, 'shield-check');
                 }, 1000);
             }, 1800);
 
-            // Context Menu Logic
+            // Message Listener (For Settings App)
+            window.addEventListener('message', (event) => {
+                if(event.data === 'wall_updated') updateWallpaper();
+                if(event.data === 'user_updated') updateUser();
+                if(event.data === 'reset') location.reload();
+            });
+
             document.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 const menu = document.getElementById('context-menu');
@@ -326,23 +345,36 @@
             });
         };
 
+        // --- PERSISTENCE LOGIC ---
+        function loadSettings() {
+            updateWallpaper();
+            updateUser();
+        }
+
+        function updateWallpaper() {
+            const savedWall = localStorage.getItem('vertex_wall');
+            const desk = document.getElementById('desktop');
+            const url = savedWall || DEFAULT_CONFIG.wall;
+            desk.style.backgroundImage = `url('${url}')`;
+        }
+
+        function updateUser() {
+            const savedUser = localStorage.getItem('vertex_user');
+            const displayUser = savedUser || DEFAULT_CONFIG.user;
+            document.getElementById('user-name').innerText = displayUser;
+        }
+
         function initBranding() {
-            // Boot Logo (Auto-Squircle)
             const bootLogo = document.getElementById('boot-logo');
-            if(CONFIG.logo) {
-                bootLogo.innerHTML = `<img src="${CONFIG.logo}" class="w-full h-full object-cover rounded-3xl">`;
+            if(DEFAULT_CONFIG.logo) {
+                bootLogo.innerHTML = `<img src="${DEFAULT_CONFIG.logo}" class="w-full h-full object-cover rounded-3xl">`;
                 bootLogo.classList.remove('bg-zinc-900');
             }
-
-            // Profile Avatar (Auto-Circle)
             const userAvatar = document.getElementById('user-avatar');
-            if(CONFIG.logo) {
-                userAvatar.innerHTML = `<img src="${CONFIG.logo}" class="w-full h-full object-cover rounded-full">`;
+            if(DEFAULT_CONFIG.logo) {
+                userAvatar.innerHTML = `<img src="${DEFAULT_CONFIG.logo}" class="w-full h-full object-cover rounded-full">`;
                 userAvatar.classList.remove('bg-zinc-800');
             }
-
-            // Username
-            document.getElementById('user-name').innerText = CONFIG.currentUser;
         }
 
         // --- CORE UI ---
@@ -386,16 +418,14 @@
         function toggleQS(type, name) {
             const icon = document.getElementById(`icon-${type}`);
             const status = document.getElementById(`status-${type}`);
-            const isActive = icon.classList.contains('text-blue-400'); // Check current state
+            const isActive = icon.classList.contains('text-blue-400');
 
             if (isActive) {
-                // Turn Off
                 icon.classList.replace('text-blue-400', 'text-gray-400');
                 status.innerText = "Off";
                 status.classList.remove('text-blue-400');
                 showToast(`${name} Disabled`, 'slash');
             } else {
-                // Turn On
                 icon.classList.replace('text-gray-400', 'text-blue-400');
                 status.innerText = "Active";
                 status.classList.add('text-blue-400');
@@ -410,7 +440,6 @@
             toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-blue-400"></i> ${msg}`;
             area.appendChild(toast);
             lucide.createIcons();
-            
             setTimeout(() => toast.classList.add('show'), 10);
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -445,7 +474,7 @@
             else if (document.exitFullscreen) document.exitFullscreen();
         }
 
-        // --- WINDOW KERNEL ---
+        // --- WINDOW KERNEL (Fixed Restoration Logic) ---
         let zIndex = 100;
         let activeApps = {};
 
@@ -454,7 +483,6 @@
             
             if (activeApps[key]) {
                 const win = activeApps[key].window;
-                // FIX: Check for CSS class 'open' instead of inline opacity
                 const isOpen = win.classList.contains('open');
 
                 if (!isOpen) {
@@ -465,7 +493,6 @@
                 }
                 return;
             }
-
             createWindow(key, title, url, w, h);
             addToTaskbar(key);
         }
@@ -517,10 +544,19 @@
             icon.id = `task-${key}`;
             icon.onclick = () => launch(key);
             
-            // Clone Icon from App Grid
-            const srcIcon = document.querySelector(`.app-item[data-name="${key}"] .app-icon-lg`).cloneNode(true);
+            let srcIcon;
+            const appItem = document.querySelector(`.app-item[data-name="${key}"] .app-icon-lg`);
+            
+            if(appItem) {
+                srcIcon = appItem.cloneNode(true);
+            } else {
+                // Fallback for direct launches
+                srcIcon = document.createElement('div');
+                srcIcon.className = "w-full h-full bg-gray-600 flex items-center justify-center";
+                srcIcon.innerHTML = `<i data-lucide="app-window" class="w-4 h-4"></i>`;
+            }
+
             srcIcon.className = "w-6 h-6 rounded-md flex items-center justify-center text-[10px]";
-            // Remove large shadows/sizes
             srcIcon.style.width = "100%";
             srcIcon.style.height = "100%";
             srcIcon.style.fontSize = "14px";
@@ -528,6 +564,7 @@
             
             icon.appendChild(srcIcon);
             bar.appendChild(icon);
+            lucide.createIcons();
         }
 
         function focusWindow(win) {
@@ -542,7 +579,8 @@
             win.classList.remove('open');
             setTimeout(() => {
                 win.remove();
-                document.getElementById(`task-${key}`).remove();
+                const taskIcon = document.getElementById(`task-${key}`);
+                if(taskIcon) taskIcon.remove();
                 delete activeApps[key];
             }, 250);
         }
@@ -551,14 +589,16 @@
             const win = activeApps[key].window;
             win.classList.remove('open');
             win.style.pointerEvents = 'none';
-            document.getElementById(`task-${key}`).classList.remove('active');
+            const taskIcon = document.getElementById(`task-${key}`);
+            if(taskIcon) taskIcon.classList.remove('active');
         }
 
         function restoreWindow(key) {
             const win = activeApps[key].window;
             win.classList.add('open');
             win.style.pointerEvents = 'auto';
-            document.getElementById(`task-${key}`).classList.add('active');
+            const taskIcon = document.getElementById(`task-${key}`);
+            if(taskIcon) taskIcon.classList.add('active');
             focusWindow(win);
         }
 
@@ -577,9 +617,8 @@
                 win.dataset.h = win.style.height;
                 win.dataset.x = win.style.left;
                 win.dataset.y = win.style.top;
-                
                 win.style.width = '100%';
-                win.style.height = 'calc(100% - 66px)'; // Minus taskbar area
+                win.style.height = 'calc(100% - 66px)'; 
                 win.style.left = '0';
                 win.style.top = '0';
                 win.style.borderRadius = "0";
